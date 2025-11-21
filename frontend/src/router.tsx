@@ -7,6 +7,8 @@ import JobDetail from "./pages/jobs/JobDetail";
 import ApplyJob from "./pages/jobs/ApplyJob";
 import CandidateDashboard from "./pages/candidate/Dashboard";
 import ApplicationDetail from "./pages/applications/ApplicationDetail";
+import EmployerDashboard from "./pages/employer/EmployerDashboard";
+import JobApplications from "./pages/employer/JobApplications";
 
 export default function AppRouter() {
   return (
@@ -22,6 +24,11 @@ export default function AppRouter() {
         <Route path="/apply/:id" element={<ApplyJob />} />
         <Route path="/dashboard" element={<CandidateDashboard />} />
         <Route path="/applications/:id" element={<ApplicationDetail />} />
+        <Route path="/employer/dashboard" element={<EmployerDashboard />} />
+        <Route
+  path="/employer/jobs/:jobId/applications"
+  element={<JobApplications />}
+/>
 
       </Routes>
     </BrowserRouter>

@@ -9,6 +9,10 @@ export const jobService = {
   getJobById: async (id: string) => {
     const res = await api.get(`/jobs/${id}`);
     return res.data;
+  },
+
+  getEmployerJobs: async () => {
+    const res = await api.get("/employer/jobs");
+    return res.data;
   }
 };
-
