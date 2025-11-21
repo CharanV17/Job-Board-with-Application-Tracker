@@ -1,0 +1,144 @@
+import { useEffect, useState } from "react";
+import { jobService } from "../../services/job.service";
+import { Link } from "react-router-dom";
+
+export default function JobList() {
+  const [jobs, setJobs] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+
+  const [query, setQuery] = useState("");
+  const [location, setLocation] = useState("");
+  const [remote, setRemote] = useState("");
+  const [sort, setSort] = useState("date");
+
+  const limit = 10;
+
+  const fetchJobs = async () => {
+    const data = await jobService.getJobs({
+      q: query || undefined,
+      location: location || undefined,
+      remote: remote || undefined,
+      sort,
+      page,
+      limit
+    });
+
+    setJobs(data.data);
+    setTotal(data.total);
+  };
+
+  useEffect(() => {
+    fetchJobs();
+  }, [page, sort]);
+
+  const handleSearch = (e: any) => {
+    e.preventDefault();
+    setPage(1);
+    fetchJobs();
+  };
+
+  return (
+    <div className="max-w-5xl mx-auto py-10 px-4">
+      <h1 className="text-3xl font-semibold mb-6">Find Jobs</h1>
+
+      {/* SEARCH + FILTERS */}
+      <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white p-4 rounded-lg shadow mb-6">
+
+        <input
+          type="text"
+          placeholder="Search jobs..."
+          className="border p-2 rounded w-full"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+
+        <input
+          type="text"
+          placeholder="Location"
+          className="border p-2 rounded w-full"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+        />
+
+        <select
+          className="border p-2 rounded w-full"
+          value={remote}
+          onChange={(e) => setRemote(e.target.value)}
+        >
+          <option value="">Remote?</option>
+          <option value="true">Remote Only</option>
+          <option value="false">On-Site</option>
+        </select>
+
+        <button
+          className="bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700"
+        >
+          Search
+        </button>
+      </form>
+
+      {/* SORT */}
+      <div className="flex justify-end mb-4">
+        <select
+          className="border p-2 rounded"
+          value={sort}
+          onChange={(e) => {
+            setSort(e.target.value);
+            setPage(1);
+          }}
+        >
+          <option value="date">Newest</option>
+          <option value="salary">Salary (High first)</option>
+          <option value="relevance">Relevance</option>
+        </select>
+      </div>
+
+      {/* JOB LIST */}
+      <div className="space-y-4">
+        {jobs.map((job: any) => (
+          <Link
+            key={job._id}
+            to={`/jobs/${job._id}`}
+            className="block p-4 bg-white shadow rounded hover:shadow-md transition"
+          >
+            <h2 className="text-xl font-semibold">{job.title}</h2>
+            <p className="text-gray-600">{job.location}</p>
+
+            <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+              <span>💰 {job.salaryMin} - {job.salaryMax}</span>
+              {job.remote && <span className="bg-green-100 text-green-700 px-2 py-1 rounded">Remote</span>}
+            </div>
+          </Link>
+        ))}
+
+        {jobs.length === 0 && (
+          <div className="text-center text-gray-500">No jobs found.</div>
+        )}
+      </div>
+
+      {/* PAGINATION */}
+      <div className="flex items-center justify-center mt-6 gap-4">
+        <button
+          disabled={page === 1}
+          onClick={() => setPage((p) => p - 1)}
+          className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+        >
+          Previous
+        </button>
+
+        <span>
+          Page {page} of {Math.ceil(total / limit) || 1}
+        </span>
+
+        <button
+          disabled={page >= Math.ceil(total / limit)}
+          onClick={() => setPage((p) => p + 1)}
+          className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
+}

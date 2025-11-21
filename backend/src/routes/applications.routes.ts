@@ -1,48 +1,16 @@
 import { Router } from "express";
-import {
-  createApplication,
-  getMyApplications,
-  withdrawApplication,
-  updateStatus
-} from "../controllers/applications.controller";
-
 import { auth, requireRole } from "../middleware/auth";
-import { validate } from "../middleware/validate";
-import { createApplicationSchema } from "../validators/application.validators";
+import {
+  getApplicationById,
+  updateApplicationStatus
+} from "../controllers/applications.controller";
 
 const router = Router();
 
-// Apply to job (Candidate)
-router.post(
-  "/",
-  auth,
-  requireRole("candidate"),
-  validate(createApplicationSchema),
-  createApplication
-);
+// Candidate + Employer can view
+router.get("/:id", auth, getApplicationById);
 
-// Candidate - view my applications
-router.get(
-  "/",
-  auth,
-  requireRole("candidate"),
-  getMyApplications
-);
-
-// Candidate - withdraw application
-router.put(
-  "/:id/withdraw",
-  auth,
-  requireRole("candidate"),
-  withdrawApplication
-);
-
-// Employer - update application status
-router.put(
-  "/:id/status",
-  auth,
-  requireRole("employer"),
-  updateStatus
-);
+// Only employer can update status
+router.put("/:id/status", auth, requireRole("employer"), updateApplicationStatus);
 
 export default router;
