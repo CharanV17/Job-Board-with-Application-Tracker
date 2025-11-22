@@ -7,6 +7,7 @@ import JobDetail from "./pages/jobs/JobDetail";
 import ApplyJob from "./pages/jobs/ApplyJob";
 
 import CandidateDashboard from "./pages/candidate/Dashboard";
+import MyApplications from "./pages/candidate/MyApplications";
 import ApplicationDetail from "./pages/applications/ApplicationDetail";
 
 import EmployerDashboard from "./pages/employer/EmployerDashboard";
@@ -15,6 +16,7 @@ import CreateJob from "./pages/employer/CreateJob";
 import EditJob from "./pages/employer/EditJob";
 
 import ProtectedRoute from "./components/ProtectedRoute";
+import Home from "./pages/Home";
 
 export default function AppRouter() {
   return (
@@ -25,11 +27,11 @@ export default function AppRouter() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* Jobs (Public View) */}
+        {/* Public job browsing */}
         <Route path="/jobs" element={<JobList />} />
         <Route path="/jobs/:id" element={<JobDetail />} />
 
-        {/* Apply Job (Candidate Only) */}
+        {/* Apply job (Candidate only) */}
         <Route
           path="/apply/:id"
           element={
@@ -39,7 +41,7 @@ export default function AppRouter() {
           }
         />
 
-        {/* Candidate Dashboard */}
+        {/* Candidate dashboard */}
         <Route
           path="/candidate/dashboard"
           element={
@@ -49,7 +51,17 @@ export default function AppRouter() {
           }
         />
 
-        {/* Application Detail (Candidate + Employer) */}
+        {/* Candidate Applications list */}
+        <Route
+          path="/applications"
+          element={
+            <ProtectedRoute role="candidate">
+              <MyApplications />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Candidate & Employer can view application details */}
         <Route
           path="/applications/:id"
           element={
@@ -59,7 +71,7 @@ export default function AppRouter() {
           }
         />
 
-        {/* Employer Dashboard */}
+        {/* Employer dashboard */}
         <Route
           path="/employer/dashboard"
           element={
@@ -69,7 +81,7 @@ export default function AppRouter() {
           }
         />
 
-        {/* Employer Job Actions */}
+        {/* Employer job actions */}
         <Route
           path="/employer/jobs/create"
           element={
@@ -97,6 +109,15 @@ export default function AppRouter() {
           }
         />
       </Routes>
+      <Route path="/" element={<Home />} />
+      <Route
+  path="/jobs/:id/apply"
+  element={
+    <ProtectedRoute role="candidate">
+      <ApplyJob />
+    </ProtectedRoute>
+  }
+/>
     </BrowserRouter>
   );
 }

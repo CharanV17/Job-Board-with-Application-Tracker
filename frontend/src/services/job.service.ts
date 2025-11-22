@@ -11,4 +11,5 @@ export const jobService = {
 
   updateJob: async (id: string, data: any) =>
     api.put(`/jobs/${id}`, data).then(r => r.data)
+  
 };
