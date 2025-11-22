@@ -1,90 +1,58 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuthStore } from "../../store/auth";
+import { Link } from "react-router-dom";
 
 export default function Navbar() {
-  const { user, logout } = useAuthStore();
-  const navigate = useNavigate();
-  const [open, setOpen] = useState(false); // ⬅️ mobile toggle state
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-    setOpen(false); // close menu after logout
-  };
+  // NOTE: This should be replaced with actual state/context management later
+  const isAuthenticated = false; 
 
   return (
-    <nav className="w-full bg-white shadow py-3 px-6 flex justify-between items-center">
-      <Link
-        to="/"
-        className="text-2xl font-bold text-blue-600"
-        onClick={() => setOpen(false)}
-      >
-        JobBoard
-      </Link>
-
-      {/* Mobile Menu Toggle */}
-      <button
-        className="sm:hidden text-2xl"
-        onClick={() => setOpen(!open)}
-      >
-        ☰
-      </button>
-
-      {/* Navigation Links — responsive */}
-      <div
-        className={`sm:flex gap-6 items-center ${
-          open ? "block mt-4" : "hidden"
-        } sm:mt-0`}
-      >
-        {!user ? (
-          <>
-            <Link
-              to="/login"
-              className="text-blue-600 font-medium"
-              onClick={() => setOpen(false)}
-            >
-              Login
+    // Outer Nav: Sets the background color and shadow
+    <nav className="bg-indigo-700 shadow-lg">
+      
+      {/* Inner Container: Centers content and provides padding */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* Main Flex Row: Organizes content (Logo left, Links right) */}
+        <div className="flex justify-between items-center h-16">
+          
+          {/* Logo / Brand Name (Left Side) */}
+          <div className="flex-shrink-0">
+            <Link to="/" className="text-2xl font-bold text-white tracking-wider hover:text-indigo-200 transition duration-150 ease-in-out">
+              💼 JobBoard
             </Link>
+          </div>
 
-            <Link
-              to="/register"
-              className="bg-blue-600 text-white px-4 py-2 rounded inline-block"
-              onClick={() => setOpen(false)}
-            >
-              Register
-            </Link>
-          </>
-        ) : (
-          <>
-            {user.role === "candidate" && (
-              <Link
-                to="/candidate/dashboard"
-                className="font-medium"
-                onClick={() => setOpen(false)}
-              >
-                Dashboard
-              </Link>
+          {/* Navigation Links (Right Side) */}
+          <div className="flex space-x-6 items-center">
+            {isAuthenticated ? (
+              // Links for Authenticated Users (Example: Dashboard, Logout)
+              <>
+                <Link to="/profile" className="text-white hover:text-indigo-200 transition duration-150 ease-in-out font-medium">
+                  Profile
+                </Link>
+                <button 
+                  className="bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-4 rounded transition duration-150 ease-in-out"
+                  // onClick={handleLogout} 
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              // Links for Public/Guest Users (Login, Register)
+              <>
+                <Link to="/login" className="text-white hover:text-indigo-200 transition duration-150 ease-in-out font-medium">
+                  Login
+                </Link>
+                <Link 
+                  to="/register" 
+                  // Use white background button for primary CTA
+                  className="bg-white text-indigo-700 hover:bg-gray-100 font-semibold py-1.5 px-4 rounded-md shadow-lg transition duration-150 ease-in-out border border-transparent"
+                >
+                  Register
+                </Link>
+              </>
             )}
-
-            {user.role === "employer" && (
-              <Link
-                to="/employer/dashboard"
-                className="font-medium"
-                onClick={() => setOpen(false)}
-              >
-                Dashboard
-              </Link>
-            )}
-
-            <button
-              onClick={handleLogout}
-              className="bg-red-500 text-white px-4 py-2 rounded inline-block"
-            >
-              Logout
-            </button>
-          </>
-        )}
+          </div>
+        </div>
       </div>
     </nav>
   );

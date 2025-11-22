@@ -1,106 +1,124 @@
 import { useState } from "react";
-import { authService } from "../../services/auth.service";
+import { Link, useNavigate } from "react-router-dom";
+import { api } from "../../services/api";
 import { useAuthStore } from "../../store/auth";
-import { useNavigate } from "react-router-dom";
+
+type Role = "candidate" | "employer";
 
 export default function Register() {
   const navigate = useNavigate();
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const setAuth = useAuthStore((s) => s.setAuth);
 
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-    role: "candidate"
-  });
-
+  const [name, setName] = useState("");
+  const [role, setRole] = useState<Role>("candidate");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-  const handleChange = (e: any) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setError(null);
     setLoading(true);
 
     try {
-      const { user, token } = await authService.register(form);
-      setAuth(user, token);
-
-      if (user.role === "employer") navigate("/employer/dashboard");
-      else navigate("/dashboard");
+      const res = await api.post("/auth/register", { name, email, password, role });
+      setAuth(res.data.user, res.data.token);
+      navigate("/jobs");
     } catch (err: any) {
-      setError(err.response?.data?.message || "Registration failed");
+      setError(err?.response?.data?.message || "Registration failed");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md bg-white p-8 rounded-xl shadow">
-        <h2 className="text-2xl font-semibold mb-6">Create an Account</h2>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <span className="text-2xl">💼</span>
+          <span className="text-2xl font-semibold text-white">JobBoard</span>
+        </div>
 
-        {error && (
-          <div className="text-red-600 text-sm mb-3">{error}</div>
-        )}
+        <div className="bg-white/95 rounded-2xl shadow-xl p-8">
+          <h1 className="text-2xl font-semibold text-slate-900 mb-2">Create your account</h1>
+          <p className="text-sm text-slate-500 mb-6">
+            Join as a candidate to find jobs, or employer to post roles.
+          </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="mb-4 rounded bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+              {error}
+            </div>
+          )}
 
-          <input
-            name="name"
-            type="text"
-            placeholder="Full Name"
-            className="w-full px-4 py-2 border rounded-md"
-            onChange={handleChange}
-            required
-          />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <input
+              type="text"
+              placeholder="Full Name"
+              className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
 
-          <input
-            name="email"
-            type="email"
-            placeholder="Email"
-            className="w-full px-4 py-2 border rounded-md"
-            onChange={handleChange}
-            required
-          />
+            <input
+              type="email"
+              placeholder="Email"
+              className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
 
-          <input
-            name="password"
-            type="password"
-            placeholder="Password"
-            className="w-full px-4 py-2 border rounded-md"
-            onChange={handleChange}
-            required
-          />
+            <input
+              type="password"
+              placeholder="Password"
+              className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
 
-          {/* ROLE SELECTOR */}
-          <select
-            name="role"
-            onChange={handleChange}
-            className="w-full px-4 py-2 border rounded-md"
-          >
-            <option value="candidate">Candidate</option>
-            <option value="employer">Employer</option>
-          </select>
+            {/* Role Selection */}
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <button
+                type="button"
+                onClick={() => setRole("candidate")}
+                className={`rounded-lg border px-3 py-2 ${
+                  role === "candidate"
+                    ? "border-blue-600 bg-blue-50 text-blue-700"
+                    : "border-slate-300 text-slate-600"
+                }`}
+              >
+                Candidate
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole("employer")}
+                className={`rounded-lg border px-3 py-2 ${
+                  role === "employer"
+                    ? "border-blue-600 bg-blue-50 text-blue-700"
+                    : "border-slate-300 text-slate-600"
+                }`}
+              >
+                Employer
+              </button>
+            </div>
 
-          <button
-            disabled={loading}
-            className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition"
-          >
-            {loading ? "Creating account..." : "Register"}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full mt-2 bg-blue-600 text-white rounded-lg py-2.5 hover:bg-blue-700 transition disabled:opacity-60"
+            >
+              {loading ? "Creating account..." : "Create Account"}
+            </button>
+          </form>
 
-        <p className="mt-4 text-sm text-center">
-          Already have an account?{" "}
-          <a href="/login" className="text-blue-600 hover:underline">
-            Login
-          </a>
-        </p>
+          <p className="mt-6 text-center text-sm text-slate-500">
+            Already have an account?{" "}
+            <Link to="/login" className="text-blue-600 hover:text-blue-700">
+              Login
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
