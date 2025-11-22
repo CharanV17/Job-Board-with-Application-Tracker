@@ -22,9 +22,11 @@ const createJob = async (req, res) => {
     res.status(201).json(job);
 };
 exports.createJob = createJob;
-// ---------------- GET ALL JOBS (PUBLIC SEARCH) ----------------
+// ---------------------------------------------------------
+// IMPROVED JOB SEARCH WITH PAGINATION + SORTING + TEXT SCORE
+// ---------------------------------------------------------
 const listJobs = async (req, res) => {
-    const { q, location, remote, page = 1, limit = 10 } = req.query;
+    const { q, location, remote, page = 1, limit = 10, sort = "date" } = req.query;
     const filter = {};
     if (q)
         filter.$text = { $search: q };
@@ -32,10 +34,27 @@ const listJobs = async (req, res) => {
         filter.location = location;
     if (remote !== undefined)
         filter.remote = remote === "true";
+    // Sorting map
+    const sortMap = {
+        date: { createdAt: -1 },
+        salary: { salaryMax: -1 },
+        relevance: { score: { $meta: "textScore" } },
+    };
+    const sortOption = sortMap[sort] || sortMap.date;
+    // Get total count for pagination
+    const total = await job_model_1.default.countDocuments(filter);
+    // Query jobs
     const jobs = await job_model_1.default.find(filter)
-        .skip((Number(page) - 1) * Number(limit))
-        .limit(Number(limit));
-    res.json(jobs);
+        .skip((+page - 1) * +limit)
+        .limit(+limit)
+        .sort(sortOption)
+        .select(sort === "relevance" ? { score: { $meta: "textScore" } } : {});
+    res.json({
+        total,
+        page: Number(page),
+        pages: Math.ceil(total / +limit),
+        data: jobs,
+    });
 };
 exports.listJobs = listJobs;
 // ---------------- GET JOB DETAILS ----------------

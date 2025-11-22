@@ -7,6 +7,7 @@ import jobRoutes from "./routes/jobs.routes";
 import applicationRoutes from "./routes/applications.routes";
 import errorHandler from "./middleware/errorHandler";
 import uploadRoutes from "./routes/upload.routes";
+import profileRoutes from "./routes/profile.routes";
 
 
 const app = express();
@@ -19,6 +20,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/applications", applicationRoutes);
 app.use("/api/uploads", uploadRoutes);
+app.use("/api/profile", profileRoutes);
 
 // health
 app.get('/health', (req, res) => {

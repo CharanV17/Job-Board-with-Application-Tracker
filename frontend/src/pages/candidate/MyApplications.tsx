@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { applicationService } from "../../services/application.service";
 import { Link } from "react-router-dom";
+import EmptyState from "../../components/ui/EmptyState"; // ⬅️ added
 
 export default function MyApplications() {
   const [apps, setApps] = useState([]);
@@ -21,7 +22,19 @@ export default function MyApplications() {
     fetchApplications();
   }, []);
 
-  if (loading) return <div className="text-center py-20">Loading...</div>;
+  if (loading) {
+    return <div className="text-center py-20">Loading...</div>;
+  }
+
+  // ⬇️ EMPTY STATE (STEP 3)
+  if (!loading && apps.length === 0) {
+    return (
+      <EmptyState
+        title="No applications yet"
+        message="Start applying to jobs and track your progress here."
+      />
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto p-6">
@@ -54,16 +67,19 @@ export default function MyApplications() {
                 </div>
 
                 {/* Resume */}
-                <a
-                  href={app.resumeUrl}
-                  target="_blank"
-                  className="text-blue-600 underline mt-3 inline-block"
-                >
-                  View Resume
-                </a>
+                {app.resumeUrl && (
+                  <a
+                    href={app.resumeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 underline mt-3 inline-block"
+                  >
+                    View Resume
+                  </a>
+                )}
               </div>
 
-              {/* Actions */}
+              {/* Right actions */}
               <div className="flex flex-col items-end gap-3">
                 <Link
                   to={`/applications/${app._id}`}
@@ -72,7 +88,6 @@ export default function MyApplications() {
                   View Details
                 </Link>
 
-                {/* Withdraw Button */}
                 {app.status === "Applied" && (
                   <button
                     onClick={() => alert("Withdraw feature coming soon")}
@@ -85,12 +100,7 @@ export default function MyApplications() {
             </div>
           </div>
         ))}
-
-        {apps.length === 0 && (
-          <p className="text-center text-gray-500">No applications found.</p>
-        )}
       </div>
     </div>
   );
 }
- 

@@ -17,6 +17,7 @@ import EditJob from "./pages/employer/EditJob";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import Home from "./pages/Home";
+import Profile from "./pages/candidate/Profile";
 
 export default function AppRouter() {
   return (
@@ -115,6 +116,14 @@ export default function AppRouter() {
   element={
     <ProtectedRoute role="candidate">
       <ApplyJob />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/profile"
+  element={
+    <ProtectedRoute role="candidate">
+      <Profile />
     </ProtectedRoute>
   }
 />

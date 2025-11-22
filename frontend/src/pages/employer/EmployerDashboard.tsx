@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { jobService } from "../../services/job.service";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/auth";
+import EmptyState from "../../components/ui/EmptyState"; // ⬅️ added
 
 export default function EmployerDashboard() {
   const navigate = useNavigate();
@@ -30,6 +31,16 @@ export default function EmployerDashboard() {
   }, []);
 
   if (loading) return <div className="text-center py-20">Loading...</div>;
+
+  // ⬇️ EMPTY STATE (STEP 4)
+  if (!loading && jobs.length === 0) {
+    return (
+      <EmptyState
+        title="No job postings yet"
+        message="Create your first job to start receiving applications."
+      />
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -75,14 +86,7 @@ export default function EmployerDashboard() {
             </div>
           </div>
         ))}
-
-        {jobs.length === 0 && (
-          <p className="text-gray-500 col-span-full text-center">
-            No jobs posted yet.
-          </p>
-        )}
       </div>
     </div>
   );
 }
- 

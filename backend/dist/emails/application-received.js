@@ -1,10 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.applicationReceivedTemplate = applicationReceivedTemplate;
-function applicationReceivedTemplate(candidateName, jobTitle) {
+exports.applicationReceivedTemplate = void 0;
+const applicationReceivedTemplate = (candidateName, jobTitle) => {
     return `
-    <h2>New Application Received</h2>
-    <p><strong>${candidateName}</strong> has applied for your job posting:</p>
-    <p><em>${jobTitle}</em></p>
+    <p>You received a new application.</p>
+    <p><strong>Candidate:</strong> ${candidateName}</p>
+    <p><strong>Job:</strong> ${jobTitle}</p>
   `;
-}
+};
+exports.applicationReceivedTemplate = applicationReceivedTemplate;

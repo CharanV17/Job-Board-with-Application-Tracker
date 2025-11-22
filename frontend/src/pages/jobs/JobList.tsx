@@ -4,8 +4,8 @@ import { Link } from "react-router-dom";
 
 export default function JobList() {
   const [jobs, setJobs] = useState([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
 
   const [query, setQuery] = useState("");
   const [location, setLocation] = useState("");
@@ -21,13 +21,14 @@ export default function JobList() {
       remote: remote || undefined,
       sort,
       page,
-      limit
+      limit,
     });
 
-    setJobs(data.data);
-    setTotal(data.total);
+    setJobs(data.jobs);
+    setPages(data.pages);
   };
 
+  // Re-fetch when page / sort changes
   useEffect(() => {
     fetchJobs();
   }, [page, sort]);
@@ -43,8 +44,10 @@ export default function JobList() {
       <h1 className="text-3xl font-semibold mb-6">Find Jobs</h1>
 
       {/* SEARCH + FILTERS */}
-      <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white p-4 rounded-lg shadow mb-6">
-
+      <form
+        onSubmit={handleSearch}
+        className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white p-4 rounded-lg shadow mb-6"
+      >
         <input
           type="text"
           placeholder="Search jobs..."
@@ -71,9 +74,7 @@ export default function JobList() {
           <option value="false">On-Site</option>
         </select>
 
-        <button
-          className="bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700"
-        >
+        <button className="bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700">
           Search
         </button>
       </form>
@@ -94,8 +95,8 @@ export default function JobList() {
         </select>
       </div>
 
-      {/* JOB LIST */}
-      <div className="space-y-4">
+      {/* JOB LIST — Updated responsive grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {jobs.map((job: any) => (
           <Link
             key={job._id}
@@ -107,13 +108,17 @@ export default function JobList() {
 
             <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
               <span>💰 {job.salaryMin} - {job.salaryMax}</span>
-              {job.remote && <span className="bg-green-100 text-green-700 px-2 py-1 rounded">Remote</span>}
+              {job.remote && (
+                <span className="bg-green-100 text-green-700 px-2 py-1 rounded">
+                  Remote
+                </span>
+              )}
             </div>
           </Link>
         ))}
 
         {jobs.length === 0 && (
-          <div className="text-center text-gray-500">No jobs found.</div>
+          <div className="text-center text-gray-500 col-span-full">No jobs found.</div>
         )}
       </div>
 
@@ -128,11 +133,11 @@ export default function JobList() {
         </button>
 
         <span>
-          Page {page} of {Math.ceil(total / limit) || 1}
+          Page {page} of {pages}
         </span>
 
         <button
-          disabled={page >= Math.ceil(total / limit)}
+          disabled={page === pages}
           onClick={() => setPage((p) => p + 1)}
           className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
         >

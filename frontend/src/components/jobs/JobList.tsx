@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { jobService } from "../../services/job.service";
 import JobFilterBar from "../../components/jobs/JobFilterBar";
+import EmptyState from "../../components/ui/EmptyState";   // ⬅️ added
 
 export default function JobList() {
   const [filters, setFilters] = useState({});
@@ -40,7 +41,11 @@ export default function JobList() {
       {loading ? (
         <p>Loading...</p>
       ) : jobs.length === 0 ? (
-        <p className="text-gray-500">No jobs found</p>
+        // ⬇️ Empty State (STEP 2)
+        <EmptyState
+          title="No jobs found"
+          message="Try adjusting filters or search keywords."
+        />
       ) : (
         <div className="grid md:grid-cols-2 gap-4">
           {jobs.map((job) => (

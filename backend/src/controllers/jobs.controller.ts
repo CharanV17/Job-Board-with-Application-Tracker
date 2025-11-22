@@ -58,11 +58,13 @@ export const listJobs = async (req: Request, res: Response) => {
     .sort(sortOption)
     .select(sort === "relevance" ? { score: { $meta: "textScore" } } : {});
 
-  res.json({
+  // 🔥 Updated pagination response format (required by frontend)
+  return res.json({
+    jobs,
     total,
     page: Number(page),
+    limit: Number(limit),
     pages: Math.ceil(total / +limit),
-    data: jobs,
   });
 };
 
