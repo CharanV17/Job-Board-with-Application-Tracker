@@ -1,18 +1,14 @@
 import { api } from "./api";
 
 export const jobService = {
-  getJobs: async (params: any) => {
-    const res = await api.get("/jobs", { params });
-    return res.data;
-  },
+  getJobs: async (params: any) => api.get("/jobs", { params }).then(r => r.data),
 
-  getJobById: async (id: string) => {
-    const res = await api.get(`/jobs/${id}`);
-    return res.data;
-  },
+  getJobById: async (id: string) => api.get(`/jobs/${id}`).then(r => r.data),
 
-  getEmployerJobs: async () => {
-    const res = await api.get("/employer/jobs");
-    return res.data;
-  }
+  getEmployerJobs: async () => api.get("/employer/jobs").then(r => r.data),
+
+  createJob: async (data: any) => api.post("/jobs", data).then(r => r.data),
+
+  updateJob: async (id: string, data: any) =>
+    api.put(`/jobs/${id}`, data).then(r => r.data)
 };
