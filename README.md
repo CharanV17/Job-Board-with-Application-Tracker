@@ -44,7 +44,6 @@ Password hashing with bcrypt
 
 
 
-Job-Board-with-Application-Tracker/
 ```
 Job-Board-with-Application-Tracker/
 │
