@@ -1,69 +1,227 @@
-# 🧑‍💼 Job Board with Application Tracker
+🚀 Features
+🔐 Authentication & RBAC
 
-A full-stack job portal where employers can post jobs and candidates can apply, upload resumes, and track application status. Employers can manage applications, update status, and receive notifications. Built using **React.js**, **Node.js**, **Express**, and **MongoDB**.
+JWT-based authentication
 
----
+Two user roles:
 
-## 🚀 Features
+Employer (can post jobs & manage applications)
 
-### 🔐 **Authentication & Roles**
-- JWT-based login and signup  
-- Two user roles:
-  - **Employer** – can post jobs and manage applications  
-  - **Candidate** – can browse jobs and apply  
-- Route protection based on role  
+Candidate (can apply & track applications)
 
----
+Role-based route protection
 
-## 🧱 **Core Modules**
+Employers cannot apply for jobs
 
-### 👨‍💼 Employer
-- Create, update, and delete job posts  
-- View all applications for their jobs  
-- Update application status:
-  - *Applied → Shortlisted → Interview → Offer → Rejected*
-- Sends email notification to candidates on status update  
-- Status history stored for audit  
+Candidates cannot create job posts
 
-### 👨‍🎓 Candidate
-- Browse & search jobs  
-- Apply to any job with a resume  
-- View all applications they submitted  
-- Track status updates in real time  
-- Receive email when employer updates status  
+🧱 Core Modules
+👨‍💼 Employer Features
 
----
+Post, edit, delete job postings
 
-## 📂 File Uploads
-- Resume upload (PDF only)  
-- Validates file size (max 5 MB)  
-- Configured for S3 / Cloudinary (your team member implementing)  
+View applications for each job
 
----
+Update application status:
 
-## 🔎 Search & Filters
-- Search by job title / description  
-- Filter by location, salary, and job type  
-- MongoDB text search enabled  
+Applied → Screening → Interview → Offer → Rejected
 
----
+Status transition validation
 
-## 🛠 Tech Stack
+Automatic email to candidate on status update
 
-### **Frontend**
-- React.js (Vite)
-- Axios for API calls
-- React Router
-- Tailwind / CSS
+View all jobs posted by employer
 
-### **Backend**
-- Node.js  
-- Express  
-- MongoDB + Mongoose  
-- Multer for file upload  
-- Nodemailer for email templates  
+👨‍🎓 Candidate Features
 
----
+Search jobs with filters (title, location, salary, remote, keyword)
 
-## 📦 Folder Structure
+Detailed job view
 
+Apply with resume upload (PDF only)
+
+View all applications
+
+Track status history
+
+Get email when status changes
+
+Withdraw application
+
+📂 Folder Structure
+
+(Complete structure aligned with assignment requirements)
+
+Job-Board-Application-Tracker/
+│
+├── backend/
+│   ├── src/
+│   │   ├── config/
+│   │   │   ├── db.ts
+│   │   │   └── cloudinary.ts
+│   │   │
+│   │   ├── controllers/
+│   │   │   ├── auth.controller.ts
+│   │   │   ├── job.controller.ts
+│   │   │   └── application.controller.ts
+│   │   │
+│   │   ├── middlewares/
+│   │   │   ├── auth.middleware.ts
+│   │   │   ├── role.middleware.ts
+│   │   │   ├── upload.middleware.ts
+│   │   │   └── error.middleware.ts
+│   │   │
+│   │   ├── models/
+│   │   │   ├── User.ts
+│   │   │   ├── Job.ts
+│   │   │   └── Application.ts
+│   │   │
+│   │   ├── routes/
+│   │   │   ├── auth.routes.ts
+│   │   │   ├── job.routes.ts
+│   │   │   └── application.routes.ts
+│   │   │
+│   │   ├── utils/
+│   │   │   ├── generateToken.ts
+│   │   │   ├── sendEmail.ts
+│   │   │   └── emailTemplates/
+│   │   │       ├── applicationReceived.ts
+│   │   │       └── applicationStatusUpdate.ts
+│   │   │
+│   │   ├── app.ts
+│   │   └── server.ts
+│   │
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── .env.example
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── context/
+│   │   ├── router/
+│   │   ├── utils/
+│   │   ├── App.tsx
+│   │   └── main.tsx
+│   │
+│   ├── public/
+│   └── package.json
+│
+├── postman/
+│   └── JobBoardCollection.json
+│
+└── README.md
+
+🔌 API Endpoints (15/15)
+Authentication
+Method	Endpoint	Description
+POST	/api/auth/register	Register as employer/candidate
+POST	/api/auth/login	Login + receive JWT
+GET	/api/auth/me	Get logged-in user
+Jobs (Employer Only)
+Method	Endpoint
+POST	/api/jobs
+GET	/api/jobs/:id
+PUT	/api/jobs/:id
+DELETE	/api/jobs/:id
+GET	/api/employer/jobs
+GET	/api/jobs/:id/applications
+Jobs (Candidate)
+Method	Endpoint
+GET	/api/jobs
+GET	/api/jobs/:id
+Applications
+Role	Method	Endpoint
+Candidate	POST	/api/applications
+Candidate	GET	/api/applications
+Candidate	PUT	/api/applications/:id/withdraw
+Employer	PUT	/api/applications/:id/status
+📦 Installation & Setup
+Backend
+cd backend
+npm install
+npm run dev
+
+Frontend
+cd frontend
+npm install
+npm run dev
+
+🧪 Test Credentials
+Employer
+email: employer@test.com
+password: 123456
+
+Candidate
+email: candidate@test.com
+password: 123456
+
+🔐 Environment Variables (.env.example)
+PORT=4000
+MONGO_URI=your_mongo_connection
+JWT_SECRET=your_jwt_secret
+
+CLOUDINARY_CLOUD_NAME=xxxx
+CLOUDINARY_API_KEY=xxxx
+CLOUDINARY_API_SECRET=xxxx
+
+EMAIL_USER=xxxx
+EMAIL_PASS=xxxx
+
+🧠 Architecture Overview
+Frontend
+
+React + Vite
+
+Axios for API calls
+
+React Router for navigation
+
+Context API for authentication
+
+Clean reusable UI components
+
+Candidate Kanban board (Drag & Drop ready)
+
+Backend
+
+Express server
+
+TypeScript for safety
+
+Mongoose for DB models
+
+Multer for resume upload
+
+Cloudinary/S3 file storage
+
+JWT auth + RBAC middleware
+
+Nodemailer for email notifications
+
+Status validation logic
+
+🔄 Application Status Flow
+Applied → Screening → Interview → Offer → Rejected
+
+
+Invalid transitions are prevented
+
+Every update triggers an email to the candidate
+
+Status history stored
+
+⚠️ Known Limitations
+
+S3/Cloudinary may need production configuration
+
+UI does not yet include drag-and-drop Kanban animations
+
+No admin role implemented
+
+Analytics dashboard not included
+
+📄 License
+
+MIT License
