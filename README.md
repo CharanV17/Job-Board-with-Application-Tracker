@@ -43,7 +43,6 @@ Password hashing with bcrypt
 🛠️ Project Architecture Overview
 
 
-Job-Board-with-Application-Tracker/
 
 Job-Board-with-Application-Tracker/
 │
@@ -65,6 +64,7 @@ Job-Board-with-Application-Tracker/
 │ ├── routes/ # Protected routing
 │ ├── api/ # Axios service layer
 └── public/
+
 
 
 🔧 Setup Instructions
