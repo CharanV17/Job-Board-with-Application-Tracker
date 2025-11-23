@@ -44,25 +44,29 @@ Password hashing with bcrypt
 
 
 Job-Board-with-Application-Tracker/
+
+Job-Board-with-Application-Tracker/
 │
-├── backend/            # Node.js + Express API
-│   ├── src/
-│   │   ├── config/     # DB, auth, environment setup
-│   │   ├── controllers # Request handlers
-│   │   ├── middleware  # JWT auth, validation
-│   │   ├── models      # Mongoose schemas
-│   │   ├── routes      # API routes (auth, jobs, applications)
-│   │   ├── utils       # Helpers (file upload, etc.)
-│   └── uploads/        # Stored resumes (local)
+├── backend/ # Node.js + Express API
+│ ├── src/
+│ │ ├── config/ # DB, auth, environment setup
+│ │ ├── controllers/ # Request handlers
+│ │ ├── middleware/ # JWT auth, validation
+│ │ ├── models/ # Mongoose schemas
+│ │ ├── routes/ # API routes (auth, jobs, applications)
+│ │ ├── utils/ # Helpers (file upload, etc.)
+│ └── uploads/ # Stored resumes (local)
 │
-└── frontend/           # React + TypeScript client
-    ├── src/
-    │   ├── pages       # UI pages by role
-    │   ├── components  # Reusable UI components
-    │   ├── context     # Auth & global state
-    │   ├── routes      # Protected routing
-    │   ├── api         # Axios service layer
-    └── public/
+└── frontend/ # React + TypeScript client
+├── src/
+│ ├── pages/ # UI pages by role
+│ ├── components/ # Reusable UI components
+│ ├── context/ # Auth & global state
+│ ├── routes/ # Protected routing
+│ ├── api/ # Axios service layer
+└── public/
+
+
 🔧 Setup Instructions
 1️⃣Backend Setup
 cd backend
