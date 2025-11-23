@@ -24,15 +24,25 @@ app.use(
 // ⭐ FIXED CORS CONFIG — must match EXACT Vercel URL
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://job-board-with-application-tracker.vercel.app",
-      "https://job-board-with-application-tracker-p1x4sefng.vercel.app"
-    ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+
+      // Allow all Vercel deployments
+      if (origin.includes("vercel.app")) {
+        return callback(null, true);
+      }
+
+      // Local dev
+      if (origin === "http://localhost:5173") {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   })
 );
+
 
 app.use(express.json({ limit: "6mb" }));
 
