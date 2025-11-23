@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { applicationService } from "../../services/application.service";
-import { useAuthStore } from "../../store/auth";
 
 interface Application {
   _id: string;
