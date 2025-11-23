@@ -1,15 +1,41 @@
-import dotenv from "dotenv";
-dotenv.config();
-import app from "./app";
-import connectDB from "./config/db";
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
 
-const PORT = process.env.PORT || 4000;
+// Import your routes
+import authRoutes from "./routes/auth.routes";
+import jobRoutes from "./routes/job.routes";
+import applicationRoutes from "./routes/application.routes";
 
-connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-}).catch(err => {
-  console.error("Failed to connect DB:", err);
-  process.exit(1);
+const app = express();
+
+// SECURITY HEADERS
+app.use(helmet());
+
+// FIXED CORS CONFIG
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173", // Local development
+      "https://job-board-with-application-tracker.vercel.app", // Vercel frontend
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
+
+// PARSERS
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// API ROUTES WITH PREFIX /api
+app.use("/api/auth", authRoutes);
+app.use("/api/jobs", jobRoutes);
+app.use("/api/applications", applicationRoutes);
+
+// HEALTH CHECK
+app.get("/api/health", (req, res) => {
+  res.json({ message: "Backend running fine 🚀", time: new Date() });
 });
+
+export default app;
