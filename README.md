@@ -1,167 +1,107 @@
-<<<<<<< HEAD
-# Job-Board-with-Application-Tracker
-=======
-🚀 Features
-🔐 Authentication & RBAC
+🚀 Job Board with Application Tracker
 
-JWT-based authentication
+A full-stack MERN application that enables employers to post jobs and candidates to apply, track applications, and manage their profile.
+Includes role-based authentication (Employer / Candidate), analytics dashboards, and resume upload support.
 
-Two user roles:
+📌 Features
+👨‍💼 Employer
 
-Employer (can post jobs & manage applications)
+Register/Login as Employer
 
-Candidate (can apply & track applications)
+Post new jobs
 
-Role-based route protection
+View & manage job listings
 
-Employers cannot apply for jobs
+Review job applications with candidate info & resume
 
-Candidates cannot create job posts
+Update application status (Accepted / Rejected / Pending)
 
-🧱 Core Modules
-👨‍💼 Employer Features
+Employer dashboard
 
-Post, edit, delete job postings
+👨‍💻 Candidate
 
-View applications for each job
+Register/Login as Candidate
 
-Update application status:
+Explore / search / filter jobs
 
-Applied → Screening → Interview → Offer → Rejected
+Apply with resume + custom cover letter
 
-Status transition validation
+Track application progress
 
-Automatic email to candidate on status update
+View applied jobs history
 
-View all jobs posted by employer
+Candidate dashboard
 
-👨‍🎓 Candidate Features
+🔐 Auth & Security
 
-Search jobs with filters (title, location, salary, remote, keyword)
+JWT based authentication
 
-Detailed job view
+Role-based access control
 
-Apply with resume upload (PDF only)
+Password hashing with bcrypt
 
-View all applications
-
-Track status history
-
-Get email when status changes
-
-Withdraw application
-
-
-🔌 API Endpoints (15/15)
-Authentication
-Method	Endpoint	Description
-POST	/api/auth/register	Register as employer/candidate
-POST	/api/auth/login	Login + receive JWT
-GET	/api/auth/me	Get logged-in user
-Jobs (Employer Only)
-Method	Endpoint
-POST	/api/jobs
-GET	/api/jobs/:id
-PUT	/api/jobs/:id
-DELETE	/api/jobs/:id
-GET	/api/employer/jobs
-GET	/api/jobs/:id/applications
-Jobs (Candidate)
-Method	Endpoint
-GET	/api/jobs
-GET	/api/jobs/:id
-Applications
-Role	Method	Endpoint
-Candidate	POST	/api/applications
-Candidate	GET	/api/applications
-Candidate	PUT	/api/applications/:id/withdraw
-Employer	PUT	/api/applications/:id/status
-📦 Installation & Setup
-Backend
+🛠️ Project Architecture Overview
+Job-Board-with-Application-Tracker/
+│
+├── backend/            # Node.js + Express API
+│   ├── src/
+│   │   ├── config/     # DB, auth, environment setup
+│   │   ├── controllers # Request handlers
+│   │   ├── middleware  # JWT auth, validation
+│   │   ├── models      # Mongoose schemas
+│   │   ├── routes      # API routes (auth, jobs, applications)
+│   │   ├── utils       # Helpers (file upload, etc.)
+│   └── uploads/        # Stored resumes (local)
+│
+└── frontend/           # React + TypeScript client
+    ├── src/
+    │   ├── pages       # UI pages by role
+    │   ├── components  # Reusable UI components
+    │   ├── context     # Auth & global state
+    │   ├── routes      # Protected routing
+    │   ├── api         # Axios service layer
+    └── public/
+🔧 Setup Instructions
+1️⃣Backend Setup
 cd backend
 npm install
-npm run dev
+Create .env in /backend:
 
-Frontend
+PORT=4000
+MONGO_URI=mongodb://localhost:27017/jobboard
+JWT_SECRET=yourSecretKey
+CLIENT_URL=http://localhost:5173
+
+
+Run backend:
+
+npm run dev
+2️⃣ Frontend Setup
 cd frontend
 npm install
+
+
+Create .env in /frontend:
+
+VITE_API_URL=http://localhost:4000/api
+
+
+Run frontend:
+
 npm run dev
 
-🧪 Test Credentials
-Employer
-email: employer@test.com
-password: 123456
-
-Candidate
-email: candidate@test.com
-password: 123456
-
-🔐 Environment Variables (.env.example)
-PORT=4000
-MONGO_URI=your_mongo_connection
-JWT_SECRET=your_jwt_secret
-
-CLOUDINARY_CLOUD_NAME=xxxx
-CLOUDINARY_API_KEY=xxxx
-CLOUDINARY_API_SECRET=xxxx
-
-EMAIL_USER=xxxx
-EMAIL_PASS=xxxx
-
-🧠 Architecture Overview
-Frontend
-
-React + Vite
-
-Axios for API calls
-
-React Router for navigation
-
-Context API for authentication
-
-Clean reusable UI components
-
-Candidate Kanban board (Drag & Drop ready)
-
-Backend
-
-Express server
-
-TypeScript for safety
-
-Mongoose for DB models
-
-Multer for resume upload
-
-Cloudinary/S3 file storage
-
-JWT auth + RBAC middleware
-
-Nodemailer for email notifications
-
-Status validation logic
-
-🔄 Application Status Flow
-Applied → Screening → Interview → Offer → Rejected
-
-
-Invalid transitions are prevented
-
-Every update triggers an email to the candidate
-
-Status history stored
+📝 API Overview (Quick Summary)
+Module	Routes
+Auth	/api/auth/register, /api/auth/login
+Jobs	/api/jobs, /api/jobs/:id
+Applications	/api/applications, /api/applications/:id/status
+Users	/api/users/me
 
 ⚠️ Known Limitations
+1. Limited dashboard analytics
+2. Email alerts not implemented
+3. Basic keyword search; no AI matching or recommendations
 
-S3/Cloudinary may need production configuration
 
-UI does not yet include drag-and-drop Kanban animations
 
-No admin role implemented
 
-Analytics dashboard not included
-
-📄 License
-
-MIT License
->>>>>>> a64b9b1de19292d636ccd7c2ca86251373be06b5
