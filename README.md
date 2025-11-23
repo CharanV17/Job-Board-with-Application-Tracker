@@ -83,12 +83,15 @@ VITE_API_URL=http://localhost:4000/api
 Run frontend:
 npm run dev
 
-📝 API Overview (Quick Summary)
-Module	Routes
-Auth	/api/auth/register, /api/auth/login
-Jobs	/api/jobs, /api/jobs/:id
-Applications	/api/applications, /api/applications/:id/status
-Users	/api/users/me
+📌 API Overview
+
+| Module        | Routes                                                                 |
+|---------------|------------------------------------------------------------------------|
+| Auth          | `POST /api/auth/register`, `POST /api/auth/login`                      |
+| Users         | `GET /api/users/me`                                                    |
+| Jobs          | `GET /api/jobs`, `GET /api/jobs/:id`, `POST /api/jobs`, `PUT /api/jobs/:id`, `DELETE /api/jobs/:id` |
+| Applications  | `POST /api/applications`, `GET /api/applications`, `GET /api/applications/me`, `GET /api/applications/:id`, `PUT /api/applications/:id/status`, `DELETE /api/applications/:id` |
+
 
 ⚠️ Known Limitations
 1. Limited dashboard analytics
