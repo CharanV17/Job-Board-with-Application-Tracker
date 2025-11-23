@@ -15,7 +15,6 @@ interface Application {
 
 export default function CandidateDashboard() {
   const user = useAuthStore((s: any) => s.user);
-  const token = useAuthStore((s: any) => s.token);
 
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
