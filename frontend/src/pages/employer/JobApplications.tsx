@@ -17,7 +17,6 @@ interface Application {
 
 export default function JobApplications() {
   const { jobId } = useParams();
-  const token = useAuthStore((s:any) => s.token);
 
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
