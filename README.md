@@ -41,6 +41,8 @@ Role-based access control
 Password hashing with bcrypt
 
 🛠️ Project Architecture Overview
+
+
 Job-Board-with-Application-Tracker/
 │
 ├── backend/            # Node.js + Express API
