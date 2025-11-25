@@ -11,7 +11,7 @@ router.post("/", auth_1.auth, (0, auth_1.requireRole)("employer"), (0, validate_
 // Public job listing
 router.get("/", jobs_controller_1.listJobs);
 // Public job detail
-router.get("/:id", jobs_controller_1.getJob);
+router.get("/:id", auth_1.auth, jobs_controller_1.getJob);
 // Update job (Employer only)
 router.put("/:id", auth_1.auth, (0, auth_1.requireRole)("employer"), (0, validate_1.validate)(job_validators_1.updateJobSchema), jobs_controller_1.updateJob);
 // Delete job (Employer only)

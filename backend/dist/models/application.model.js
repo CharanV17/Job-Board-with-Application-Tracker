@@ -4,6 +4,7 @@ const mongoose_1 = require("mongoose");
 const ApplicationSchema = new mongoose_1.Schema({
     job: { type: mongoose_1.Schema.Types.ObjectId, ref: "Job", required: true },
     candidate: { type: mongoose_1.Schema.Types.ObjectId, ref: "User", required: true },
+    // 🟢 Store resume URL instead of binary buffer
     resumeUrl: { type: String, required: true },
     originalFileName: String,
     fileSize: Number,
