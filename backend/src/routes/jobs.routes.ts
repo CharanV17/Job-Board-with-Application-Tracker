@@ -28,7 +28,7 @@ router.post(
 router.get("/", listJobs);
 
 // Public job detail
-router.get("/:id", getJob);
+router.get("/:id", auth, getJob);
 
 // Update job (Employer only)
 router.put(

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { api } from "../../services/api";
+import { authService } from "../../services/auth.service";
 import { useAuthStore } from "../../store/auth";
 
 export default function Login() {
@@ -12,84 +12,77 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
-    setError(null);
     setLoading(true);
+    setError(null);
 
     try {
-      const res = await api.post("/auth/login", { email, password });
-      setAuth(res.data.user, res.data.token);
-      navigate("/jobs");
+      const res = await authService.login({ email, password });
+
+      // ⬇ store token + user in Zustand
+      setAuth(res.user, res.token);
+
+      // redirect according to role
+      if (res.user.role === "employer") navigate("/employer/dashboard");
+      else navigate("/candidate/dashboard");
     } catch (err: any) {
       setError(err?.response?.data?.message || "Invalid email or password");
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="flex items-center justify-center gap-2 mb-6">
-          <span className="text-2xl">💼</span>
-          <span className="text-2xl font-semibold text-white">JobBoard</span>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 px-4">
+      <div className="w-full max-w-md bg-white/95 rounded-2xl shadow-xl border border-slate-200 p-8">
+        <h1 className="text-3xl font-semibold text-center text-slate-800 mb-6">
+          Login
+        </h1>
 
-        <div className="bg-white/95 rounded-2xl shadow-xl p-8 border border-slate-100">
-          <h1 className="text-2xl font-semibold text-slate-900 mb-2">Welcome back</h1>
-          <p className="text-sm text-slate-500 mb-6">
-            Login to manage your applications or job postings.
+        {error && (
+          <p className="mb-4 bg-red-100 text-red-700 border border-red-300 px-3 py-2 rounded-md text-sm">
+            {error}
           </p>
+        )}
 
-          {error && (
-            <div className="mb-4 rounded bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
-              {error}
-            </div>
-          )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="text-sm font-medium text-slate-700">Email</label>
+            <input
+              type="email"
+              className="w-full border rounded-lg px-3 py-2 mt-1 focus:ring-2 focus:ring-blue-500"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-slate-700">Email</label>
-              <input
-                type="email"
-                className="w-full border rounded-lg px-3 py-2 mt-1 focus:ring-2 focus:ring-blue-500"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
+          <div>
+            <label className="text-sm font-medium text-slate-700">Password</label>
+            <input
+              type="password"
+              className="w-full border rounded-lg px-3 py-2 mt-1 focus:ring-2 focus:ring-blue-500"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
 
-            <div>
-              <label className="text-sm font-medium text-slate-700">Password</label>
-              <input
-                type="password"
-                className="w-full border rounded-lg px-3 py-2 mt-1 focus:ring-2 focus:ring-blue-500"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
+          <button
+            className="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition disabled:opacity-60"
+            disabled={loading}
+          >
+            {loading ? "Logging in..." : "Login"}
+          </button>
+        </form>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 text-white rounded-lg py-2.5 mt-2 hover:bg-blue-700 transition disabled:opacity-60"
-            >
-              {loading ? "Logging in..." : "Login"}
-            </button>
-          </form>
-
-          <p className="mt-6 text-center text-sm text-slate-500">
-            Don’t have an account?{" "}
-            <Link to="/register" className="text-blue-600 hover:text-blue-700">
-              Create one
-            </Link>
-          </p>
-        </div>
-
-        <p className="mt-4 text-center text-xs text-slate-400">
-          © {new Date().getFullYear()} JobBoard
+        <p className="text-center text-sm text-slate-500 mt-6">
+          Don’t have an account?{" "}
+          <Link to="/register" className="text-blue-600 hover:text-blue-700 font-medium">
+            Create one
+          </Link>
         </p>
       </div>
     </div>

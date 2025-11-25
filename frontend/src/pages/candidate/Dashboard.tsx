@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { applicationService } from "../../services/application.service";
+import { useAuthStore } from "../../store/auth";
+import EmptyState from "../../components/ui/EmptyState";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 const columns = [
@@ -11,75 +13,75 @@ const columns = [
 ];
 
 export default function CandidateDashboard() {
-  const [apps, setApps] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const user = useAuthStore((s) => s.user);
+  const loadingAuth = useAuthStore((s) => s.loading);
 
-  const fetchApps = async () => {
+  const [apps, setApps] = useState<any[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+
+const fetchApplications = async () => {
+  try {
     const data = await applicationService.getMyApplications();
     setApps(data);
-    setLoading(false);
-  };
+  } catch (err) {
+    console.error(err);
+    setApps([]); // ensures EmptyState triggers instead of stuck UI
+  }
+  setLoadingData(false);
+};
+
 
   useEffect(() => {
-    fetchApps();
-  }, []);
+    if (!loadingAuth && user) fetchApplications();
+  }, [loadingAuth, user]);
 
-  // Group apps by column
+  // Loading stage
+  if (loadingAuth || loadingData)
+    return <div className="text-center py-20">Loading...</div>;
+
+  // Empty state
+  if (apps.length === 0)
+    return (
+      <EmptyState
+        title="No applications yet"
+        message="Start applying to jobs and track your progress here."
+      />
+    );
+
+  // Group apps by status
   const grouped = columns.reduce((acc: any, col) => {
     acc[col.key] = apps.filter((a: any) => a.status === col.key);
     return acc;
   }, {});
 
-  // Convert to structure usable by DnD
-  const [columnData, setColumnData] = useState<any>({});
+  const [columnData, setColumnData] = useState(grouped);
 
   useEffect(() => {
-    const initial: any = {};
-    columns.forEach((col) => {
-      initial[col.key] = grouped[col.key] || [];
-    });
-    setColumnData(initial);
+    setColumnData(grouped);
   }, [apps]);
 
-const onDragEnd = async (result: any) => {
-  const { destination, source } = result;
+  const onDragEnd = async (result: any) => {
+    const { destination, source } = result;
+    if (!destination) return;
 
-  if (!destination) return;
+    const srcCol = source.droppableId;
+    const dstCol = destination.droppableId;
+    if (srcCol === dstCol && destination.index === source.index) return;
 
-  if (
-    destination.droppableId === source.droppableId &&
-    destination.index === source.index
-  ) {
-    return;
-  }
+    const app = columnData[srcCol][source.index];
 
-  const sourceCol = source.droppableId;
-  const destCol = destination.droppableId;
+    const updated = structuredClone(columnData);
+    updated[srcCol].splice(source.index, 1);
+    updated[dstCol].splice(destination.index, 0, { ...app, status: dstCol });
+    setColumnData(updated);
 
-  const app = columnData[sourceCol][source.index];
-
-  const updated = { ...columnData };
-  updated[sourceCol] = [...updated[sourceCol]];
-  updated[destCol] = [...updated[destCol]];
-
-  updated[sourceCol].splice(source.index, 1);
-  updated[destCol].splice(destination.index, 0, {
-    ...app,
-    status: destCol
-  });
-
-  setColumnData(updated);
-
-  try {
-    await applicationService.updateStatus(app._id, destCol);
-  } catch (err) {
-    alert("Failed to update status");
-    fetchApps();
-  }
-};
-
-
-  if (loading) return <div className="text-center py-20">Loading...</div>;
+    try {
+      await applicationService.updateStatus(app._id, dstCol);
+    } catch {
+      alert("Failed to update status");
+      fetchApplications();
+    }
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -112,10 +114,6 @@ const onDragEnd = async (result: any) => {
                           <p className="text-sm text-gray-600">
                             {app.job.location}
                           </p>
-                          <div className="text-xs text-gray-500 mt-2">
-                            Applied:{" "}
-                            {new Date(app.createdAt).toLocaleDateString()}
-                          </div>
                         </div>
                       )}
                     </Draggable>

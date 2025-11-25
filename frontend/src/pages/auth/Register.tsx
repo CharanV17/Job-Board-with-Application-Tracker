@@ -1,124 +1,121 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { api } from "../../services/api";
+import { authService } from "../../services/auth.service";
 import { useAuthStore } from "../../store/auth";
-
-type Role = "candidate" | "employer";
 
 export default function Register() {
   const navigate = useNavigate();
   const setAuth = useAuthStore((s) => s.setAuth);
 
   const [name, setName] = useState("");
-  const [role, setRole] = useState<Role>("candidate");
+  const [role, setRole] = useState<"candidate" | "employer">("candidate");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
     try {
-      const res = await api.post("/auth/register", { name, email, password, role });
-      setAuth(res.data.user, res.data.token);
-      navigate("/jobs");
+      const res = await authService.register({ name, email, password, role });
+
+      // ⬇ Save user + token to global state
+      setAuth(res.user, res.token);
+
+      // redirect based on role
+      if (res.user.role === "employer") navigate("/employer/dashboard");
+      else navigate("/candidate/dashboard");
     } catch (err: any) {
       setError(err?.response?.data?.message || "Registration failed");
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="flex items-center justify-center gap-2 mb-6">
-          <span className="text-2xl">💼</span>
-          <span className="text-2xl font-semibold text-white">JobBoard</span>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 px-4">
+      <div className="w-full max-w-md bg-white/95 rounded-2xl shadow-xl border border-slate-200 p-8">
+        <h1 className="text-3xl font-semibold text-center text-slate-800 mb-6">
+          Create an Account
+        </h1>
 
-        <div className="bg-white/95 rounded-2xl shadow-xl p-8">
-          <h1 className="text-2xl font-semibold text-slate-900 mb-2">Create your account</h1>
-          <p className="text-sm text-slate-500 mb-6">
-            Join as a candidate to find jobs, or employer to post roles.
+        {error && (
+          <p className="mb-4 bg-red-100 text-red-700 border border-red-300 px-3 py-2 rounded-md text-sm">
+            {error}
           </p>
+        )}
 
-          {error && (
-            <div className="mb-4 rounded bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
-              {error}
-            </div>
-          )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="text"
+            placeholder="Full Name"
+            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <input
-              type="text"
-              placeholder="Full Name"
-              className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
+          <input
+            type="email"
+            placeholder="Email"
+            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
 
-            <input
-              type="email"
-              placeholder="Email"
-              className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+          <input
+            type="password"
+            placeholder="Password"
+            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
 
-            <input
-              type="password"
-              placeholder="Password"
-              className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-
-            {/* Role Selection */}
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <button
-                type="button"
-                onClick={() => setRole("candidate")}
-                className={`rounded-lg border px-3 py-2 ${
-                  role === "candidate"
-                    ? "border-blue-600 bg-blue-50 text-blue-700"
-                    : "border-slate-300 text-slate-600"
-                }`}
-              >
-                Candidate
-              </button>
-              <button
-                type="button"
-                onClick={() => setRole("employer")}
-                className={`rounded-lg border px-3 py-2 ${
-                  role === "employer"
-                    ? "border-blue-600 bg-blue-50 text-blue-700"
-                    : "border-slate-300 text-slate-600"
-                }`}
-              >
-                Employer
-              </button>
-            </div>
-
+          {/* Role select buttons */}
+          <div className="flex gap-2 text-sm">
             <button
-              type="submit"
-              disabled={loading}
-              className="w-full mt-2 bg-blue-600 text-white rounded-lg py-2.5 hover:bg-blue-700 transition disabled:opacity-60"
+              type="button"
+              onClick={() => setRole("candidate")}
+              className={`flex-1 rounded-lg border py-2 ${
+                role === "candidate"
+                  ? "border-blue-600 bg-blue-50 text-blue-700"
+                  : "border-slate-300 text-slate-600"
+              }`}
             >
-              {loading ? "Creating account..." : "Create Account"}
+              Candidate
             </button>
-          </form>
+            <button
+              type="button"
+              onClick={() => setRole("employer")}
+              className={`flex-1 rounded-lg border py-2 ${
+                role === "employer"
+                  ? "border-blue-600 bg-blue-50 text-blue-700"
+                  : "border-slate-300 text-slate-600"
+              }`}
+            >
+              Employer
+            </button>
+          </div>
 
-          <p className="mt-6 text-center text-sm text-slate-500">
-            Already have an account?{" "}
-            <Link to="/login" className="text-blue-600 hover:text-blue-700">
-              Login
-            </Link>
-          </p>
-        </div>
+          <button
+            className="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition disabled:opacity-60"
+            disabled={loading}
+          >
+            {loading ? "Creating account..." : "Register"}
+          </button>
+        </form>
+
+        <p className="text-center text-sm text-slate-500 mt-6">
+          Already have an account?{" "}
+          <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+            Login
+          </Link>
+        </p>
       </div>
     </div>
   );

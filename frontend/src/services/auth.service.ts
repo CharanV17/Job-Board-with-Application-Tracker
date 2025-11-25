@@ -1,4 +1,4 @@
- import { api } from "./api";
+import { api } from "./api";
 
 export const authService = {
   register: async (data: any) => {
@@ -9,6 +9,10 @@ export const authService = {
   login: async (data: any) => {
     const res = await api.post("/auth/login", data);
     return res.data;
+  },
+
+  me: async () => {
+    const res = await api.get("/auth/me");
+    return res.data;
   }
 };
-

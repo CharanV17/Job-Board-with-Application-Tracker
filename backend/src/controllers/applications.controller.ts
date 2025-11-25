@@ -6,93 +6,92 @@ import { allowedTransitions } from "../constants/statusWorkflow";
 import { Request, Response } from "express";
 
 // =============================
-// CREATE APPLICATION
+// CREATE APPLICATION (Candidate)
 // =============================
-export const createApplication = async (req: Request, res: Response) => {
-  const session = await Application.startSession();
-  session.startTransaction();
-
+export const createApplication = async (req: any, res: Response) => {
   try {
-    const { jobId } = req.body;
+    const { jobId, coverLetter } = req.body;
 
-    const job = await Job.findById(jobId).session(session);
+    if (!jobId) return res.status(400).json({ message: "Job ID required" });
+    if (!req.file?.location) return res.status(400).json({ message: "Resume missing" });
+
+    const job = await Job.findById(jobId);
     if (!job) return res.status(404).json({ message: "Job not found" });
 
-    const candidateId = (req as any).user.id;
+    const candidateId = req.user.id;
 
-    const application = await Application.create(
-      [
-        {
-          job: jobId,
-          candidate: candidateId,
-          status: "Applied",
-          statusHistory: [
-            {
-              status: "Applied",
-              changedBy: candidateId,
-              at: new Date(),
-            },
-          ],
-        },
-      ],
-      { session }
-    );
-
-    await session.commitTransaction();
-    session.endSession();
-
-    // EMAIL NOTIFICATION — employer
-    const employer = await User.findById(job.employer);
-    const candidate = await User.findById(candidateId);
-
-    if (employer?.email) {
-      await emailService.applicationReceived(
-        employer.email,
-        candidate?.name || "A candidate",
-        job.title
-      );
+    // Prevent duplicate submissions
+    const existing = await Application.findOne({ job: jobId, candidate: candidateId });
+    if (existing) {
+      return res.status(400).json({ message: "You already applied to this job" });
     }
 
-    return res.json(application[0]);
+    const application = await Application.create({
+      job: jobId,
+      candidate: candidateId,
+      resumeUrl: req.file.location,      // 🟢 URL returned by S3
+      originalFileName: req.file.originalname,
+      fileSize: req.file.size,
+      coverLetter,
+      status: "Applied",
+      statusHistory: [
+        {
+          status: "Applied",
+          changedBy: candidateId,
+          at: new Date(),
+        },
+      ],
+    });
+
+    return res.json({
+      message: "Application submitted successfully",
+      application,
+    });
   } catch (err) {
-    await session.abortTransaction();
-    session.endSession();
     console.error(err);
     return res.status(500).json({ message: "Server error" });
+  }
+};
+
+// =============================
+// GET APPLICATIONS OF LOGGED-IN CANDIDATE
+// =============================
+export const getMyApplications = async (req: any, res: Response) => {
+  try {
+    const candidateId = req.user.id;
+
+    const applications = await Application.find({ candidate: candidateId })
+      .populate("job", "title location salaryMin salaryMax")
+      .sort({ createdAt: -1 });
+
+    return res.json(applications);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Failed to load applications" });
   }
 };
 
 // =============================
 // GET SINGLE APPLICATION
 // =============================
-export const getApplicationById = async (req: Request, res: Response) => {
+export const getApplicationById = async (req: any, res: Response) => {
   try {
-    const appId = req.params.id;
-
-    const application = await Application.findById(appId)
+    const app = await Application.findById(req.params.id)
       .populate("job")
-      .populate("candidate");
+      .populate("candidate", "name email");
 
-    if (!application) {
-      return res.status(404).json({ message: "Application not found" });
-    }
+    if (!app) return res.status(404).json({ message: "Application not found" });
 
-    const user = (req as any).user;
+    if (req.user.role === "candidate" && app.candidate._id.toString() !== req.user.id)
+      return res.status(403).json({ message: "Forbidden" });
 
-    if (user.role === "candidate") {
-      if (application.candidate._id.toString() !== user.id) {
+    if (req.user.role === "employer") {
+      const job = await Job.findById(app.job._id);
+      if (!job || job.employer.toString() !== req.user.id)
         return res.status(403).json({ message: "Forbidden" });
-      }
     }
 
-    if (user.role === "employer") {
-      const job = await Job.findById(application.job._id);
-      if (!job || job.employer.toString() !== user.id) {
-        return res.status(403).json({ message: "Forbidden" });
-      }
-    }
-
-    return res.json(application);
+    return res.json(app);
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Server error" });
@@ -100,52 +99,31 @@ export const getApplicationById = async (req: Request, res: Response) => {
 };
 
 // =============================
-// UPDATE APPLICATION STATUS
-// (STEP 2)
+// UPDATE APPLICATION STATUS (Employer only)
 // =============================
-export const updateStatus = async (
-  req: Request & { body: { status: string } },
-  res: Response
-) => {
-  const { status } = req.body;
+export const updateStatus = async (req: any, res: Response) => {
+  try {
+    const { status } = req.body;
+    const app = await Application.findById(req.params.id);
+    if (!app) return res.status(404).json({ message: "Not found" });
 
-  const app = await Application.findById(req.params.id);
-  if (!app) return res.status(404).json({ message: "Not found" });
+    const allowed = allowedTransitions[app.status] || [];
+    if (!allowed.includes(status))
+      return res.status(400).json({ message: `Invalid transition` });
 
-  const currentStatus = app.status;
-
-  // VALIDATION
-  const allowed = allowedTransitions[currentStatus] || [];
-  if (!allowed.includes(status)) {
-    return res.status(400).json({
-      message: `Invalid status transition: ${currentStatus} → ${status}`,
+    app.statusHistory.push({
+      status: app.status,
+      changedBy: req.user.id,
+      at: new Date(),
     });
+
+    app.status = status;
+    await app.save();
+    return res.json(app);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error" });
   }
-
-  // Save status history BEFORE update
-  app.statusHistory.push({
-    status: currentStatus,
-    changedBy: (req as any).user.id,
-    at: new Date(),
-  });
-
-  app.status = status;
-  await app.save();
-
-  // EMAIL NOTIFICATION — candidate
-  const job = await Job.findById(app.job);
-  const candidate = await User.findById(app.candidate);
-
-  if (candidate?.email) {
-    await emailService.statusUpdated(
-      candidate.email,
-      status,
-      job?.title || "Job"
-    );
-  }
-
-  return res.json(app);
 };
 
-// Optional: Keep backward compatibility if router still uses updateApplicationStatus
 export const updateApplicationStatus = updateStatus;

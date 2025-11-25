@@ -1,46 +1,56 @@
 import { useEffect, useState } from "react";
 import { jobService } from "../../services/job.service";
-import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/auth";
-import EmptyState from "../../components/ui/EmptyState"; // ⬅️ added
+import { useNavigate } from "react-router-dom";
+import EmptyState from "../../components/ui/EmptyState";
 
 export default function EmployerDashboard() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
+  const loadingAuth = useAuthStore((s) => s.loading);
 
-  const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
 
   const fetchJobs = async () => {
     try {
       const data = await jobService.getEmployerJobs();
       setJobs(data);
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      alert("Failed to fetch employer jobs");
+      setJobs([]); // ensures UI does not break
     }
-    setLoading(false);
+    setLoadingData(false);
   };
 
   useEffect(() => {
-    if (user?.role !== "employer") {
-      navigate("/jobs");
-      return;
-    }
-    fetchJobs();
-  }, []);
+    if (!loadingAuth && user?.role === "employer") fetchJobs();
+  }, [loadingAuth, user]);
 
-  if (loading) return <div className="text-center py-20">Loading...</div>;
+  if (loadingAuth || loadingData)
+    return <div className="text-center py-20">Loading...</div>;
 
-  // ⬇️ EMPTY STATE (STEP 4)
-  if (!loading && jobs.length === 0) {
+  // EMPTY STATE FIX — show Create Job button even with no jobs
+  if (jobs.length === 0)
     return (
-      <EmptyState
-        title="No job postings yet"
-        message="Create your first job to start receiving applications."
-      />
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-semibold">Employer Dashboard</h1>
+
+          <button
+            onClick={() => navigate("/employer/jobs/create")}
+            className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700"
+          >
+            + Create Job
+          </button>
+        </div>
+
+        <EmptyState
+          title="No job postings yet"
+          message="Create your first job to start receiving applications."
+        />
+      </div>
     );
-  }
 
   return (
     <div className="max-w-6xl mx-auto p-6">

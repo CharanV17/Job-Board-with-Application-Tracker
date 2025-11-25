@@ -6,10 +6,6 @@ import jwt from "jsonwebtoken";
 const JWT_SECRET = process.env.JWT_SECRET as string;
 const JWT_EXPIRES = process.env.JWT_EXPIRES_IN || "1h";
 
-if (!JWT_SECRET) {
-  throw new Error("JWT_SECRET is not defined in environment variables");
-}
-
 // REGISTER
 export const register = async (req: Request, res: Response) => {
   const { name, email, password, role } = req.body;
@@ -32,18 +28,19 @@ export const register = async (req: Request, res: Response) => {
 
   const token = jwt.sign(
     { id: user._id.toString(), role: user.role },
-    JWT_SECRET as string,
-    { expiresIn: JWT_EXPIRES as string }
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRES }
   );
 
   return res.status(201).json({
+    message: "Registered successfully",
+    token,
     user: {
-      id: user._id,
+      _id: user._id, // <-- FIXED for frontend compatibility
+      name: user.name,
       email: user.email,
       role: user.role,
-      name: user.name,
     },
-    token,
   });
 };
 
@@ -61,17 +58,18 @@ export const login = async (req: Request, res: Response) => {
 
   const token = jwt.sign(
     { id: user._id.toString(), role: user.role },
-    JWT_SECRET as string,
-    { expiresIn: JWT_EXPIRES as string }
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRES }
   );
 
   return res.json({
+    message: "Logged in", // <-- REQUIRED FOR FRONTEND
     token,
     user: {
-      id: user._id,
+      _id: user._id, // <-- FIXED
+      name: user.name,
       email: user.email,
       role: user.role,
-      name: user.name,
     },
   });
 };
@@ -84,17 +82,19 @@ export const me = async (req: Request, res: Response) => {
   const token = header.replace("Bearer ", "");
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET as string) as {
+    const payload = jwt.verify(token, JWT_SECRET) as {
       id: string;
       role: string;
     };
 
-    const user = await User.findById(payload.id).select("-passwordHash");
+    const user = await User.findById(payload.id).select(
+      "_id name email role"
+    );
 
     if (!user)
       return res.status(404).json({ message: "User not found" });
 
-    return res.json({ user });
+    return res.json({ user }); // <-- frontend expects this
   } catch {
     return res.status(401).json({ message: "Invalid or expired token" });
   }

@@ -21,7 +21,7 @@ export const createJob = async (req: Request & { user?: any }, res: Response) =>
 };
 
 // ---------------------------------------------------------
-// IMPROVED JOB SEARCH WITH PAGINATION + SORTING + TEXT SCORE
+// JOB LIST WITH PAGINATION + SEARCH + SORT
 // ---------------------------------------------------------
 export const listJobs = async (req: Request, res: Response) => {
   const {
@@ -30,7 +30,7 @@ export const listJobs = async (req: Request, res: Response) => {
     remote,
     page = 1,
     limit = 10,
-    sort = "date"
+    sort = "date",
   } = req.query;
 
   const filter: any = {};
@@ -39,7 +39,6 @@ export const listJobs = async (req: Request, res: Response) => {
   if (location) filter.location = location;
   if (remote !== undefined) filter.remote = remote === "true";
 
-  // Sorting map
   const sortMap: Record<string, any> = {
     date: { createdAt: -1 },
     salary: { salaryMax: -1 },
@@ -48,17 +47,14 @@ export const listJobs = async (req: Request, res: Response) => {
 
   const sortOption = sortMap[sort as string] || sortMap.date;
 
-  // Get total count for pagination
   const total = await Job.countDocuments(filter);
 
-  // Query jobs
   const jobs = await Job.find(filter)
     .skip((+page - 1) * +limit)
     .limit(+limit)
     .sort(sortOption)
     .select(sort === "relevance" ? { score: { $meta: "textScore" } } : {});
 
-  // 🔥 Updated pagination response format (required by frontend)
   return res.json({
     jobs,
     total,
@@ -68,12 +64,26 @@ export const listJobs = async (req: Request, res: Response) => {
   });
 };
 
-// ---------------- GET JOB DETAILS ----------------
-export const getJob = async (req: Request, res: Response) => {
+// ---------------- GET JOB DETAILS (with hasApplied flag) ----------------
+export const getJob = async (req: Request & { user?: any }, res: Response) => {
   const job = await Job.findById(req.params.id);
   if (!job) return res.status(404).json({ message: "Job not found" });
 
-  res.json(job);
+  let hasApplied = false;
+
+  // Only check application status if user logged in as a candidate
+  if (req.user?.id && req.user?.role === "candidate") {
+    const exists = await Application.exists({
+      job: job._id,
+      candidate: req.user.id,
+    });
+    hasApplied = Boolean(exists);
+  }
+
+  return res.json({
+    ...job.toObject(),
+    hasApplied, // 👈 consumed by frontend for Apply button logic
+  });
 };
 
 // ---------------- UPDATE JOB ----------------
@@ -110,7 +120,16 @@ export const getEmployerJobs = async (
   res: Response
 ) => {
   const jobs = await Job.find({ employer: req.user.id });
-  res.json(jobs);
+
+  // Optionally include applicant count in the response
+  const jobsWithCounts = await Promise.all(
+    jobs.map(async (job: any) => {
+      const count = await Application.countDocuments({ job: job._id });
+      return { ...job.toObject(), applicantCount: count };
+    })
+  );
+
+  res.json(jobsWithCounts);
 };
 
 // ---------------- APPLICATIONS FOR JOB ----------------
