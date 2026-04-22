@@ -1,106 +1,92 @@
 import { useEffect, useState } from "react";
-import { applicationService } from "../../services/application.service";
+import { useAuthStore } from "../../store/auth";
+import axios from "axios";
 import { Link } from "react-router-dom";
-import EmptyState from "../../components/ui/EmptyState"; // ⬅️ added
+
+interface JobInfo {
+  title: string;
+  company: string;
+  location: string;
+}
+
+interface Application {
+  _id: string;
+  status: string;
+  createdAt: string;
+  job: JobInfo;
+}
 
 export default function MyApplications() {
-  const [apps, setApps] = useState([]);
+  const token = useAuthStore((s: any) => s.token);
+  const [apps, setApps] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchApplications = async () => {
+  const fetchApps = async () => {
+    setLoading(true);
     try {
-      const data = await applicationService.getMyApplications();
-      setApps(data);
+      const res = await axios.get("http://localhost:4000/api/applications", {
+        headers: { Authorization: `Bearer ${token}` },
+        
+      });
+      setApps(res.data.applications || []);
     } catch (err) {
-      console.error(err);
-      alert("Failed to load applications");
+      console.error("Failed to load applications", err);
     }
     setLoading(false);
+    console.log("Calling:", "/applications/my");
   };
 
   useEffect(() => {
-    fetchApplications();
+    fetchApps();
   }, []);
 
   if (loading) {
-    return <div className="text-center py-20">Loading...</div>;
-  }
-
-  // ⬇️ EMPTY STATE (STEP 3)
-  if (!loading && apps.length === 0) {
-    return (
-      <EmptyState
-        title="No applications yet"
-        message="Start applying to jobs and track your progress here."
-      />
-    );
+    return <div className="p-6 text-center">Loading your applications...</div>;
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-6">
-      <h1 className="text-3xl font-semibold mb-6">My Applications</h1>
+    <div className="max-w-4xl mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-6">My Applications</h1>
 
-      <div className="space-y-4">
-        {apps.map((app: any) => (
-          <div
-            key={app._id}
-            className="p-5 bg-white rounded shadow hover:shadow-md transition"
-          >
-            <div className="flex justify-between">
+      {apps.length === 0 ? (
+        <p className="text-gray-600">
+          You have not applied to any jobs yet.
+        </p>
+      ) : (
+        <div className="space-y-4">
+          {apps.map((app) => (
+            <div
+              key={app._id}
+              className="p-4 bg-white rounded-lg shadow flex flex-col sm:flex-row justify-between"
+            >
+              {/* Left: Job Info */}
               <div>
-                {/* Job Info */}
-                <h2 className="text-xl font-semibold">{app.job.title}</h2>
-                <p className="text-gray-600">{app.job.location}</p>
+                <h2 className="text-lg font-semibold">{app.job.title}</h2>
+                <p className="text-gray-600">{app.job.company}</p>
+                <p className="text-gray-500 text-sm">{app.job.location}</p>
 
-                <div className="text-sm mt-2 text-gray-700">
-                  Applied on:
-                  <span className="ml-1 font-medium">
-                    {new Date(app.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
+                <p className="text-blue-600 font-semibold mt-2">
+                  Status: {app.status}
+                </p>
 
-                {/* Status */}
-                <div className="mt-2">
-                  <span className="px-3 py-1 rounded bg-gray-200 text-sm font-medium">
-                    {app.status}
-                  </span>
-                </div>
-
-                {/* Resume */}
-                {app.resumeUrl && (
-                  <a
-                    href={app.resumeUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 underline mt-3 inline-block"
-                  >
-                    View Resume
-                  </a>
-                )}
+                <p className="text-xs text-gray-400 mt-1">
+                  Applied on {new Date(app.createdAt).toLocaleDateString()}
+                </p>
               </div>
 
-              {/* Right actions */}
-              <div className="flex flex-col items-end gap-3">
+              {/* Right: View Button */}
+              <div className="mt-3 sm:mt-0">
                 <Link
                   to={`/applications/${app._id}`}
-                  className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm"
+                  className="px-4 py-2 bg-gray-100 rounded border hover:bg-gray-200 text-sm"
                 >
                   View Details
                 </Link>
-
-                {app.status === "Applied" && (
-                  <button
-                    onClick={() => alert("Withdraw feature coming soon")}
-                    className="px-3 py-1 bg-red-200 hover:bg-red-300 text-red-700 rounded text-sm"
-                  >
-                    Withdraw
-                  </button>
-                )}
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

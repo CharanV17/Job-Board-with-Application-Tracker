@@ -1,122 +1,107 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import { authService } from "../../services/auth.service";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuthStore } from "../../store/auth";
 
 export default function Register() {
   const navigate = useNavigate();
-  const setAuth = useAuthStore((s) => s.setAuth);
+  const loginFn = useAuthStore((s: any) => s.login);
 
-  const [name, setName] = useState("");
-  const [role, setRole] = useState<"candidate" | "employer">("candidate");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "candidate",
+  });
+
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
+
+    if (!form.name || !form.email || !form.password)
+      return setError("All fields are required");
 
     try {
-      const res = await authService.register({ name, email, password, role });
+      console.log("FORM SENT TO API:", form);
 
-      // ⬇ Save user + token to global state
-      setAuth(res.user, res.token);
+      const data = await authService.register(form);
 
-      // redirect based on role
-      if (res.user.role === "employer") navigate("/employer/dashboard");
-      else navigate("/candidate/dashboard");
+      loginFn(data.user, data.token);
+
+      if (data.user.role === "candidate") {
+  navigate("/candidate/dashboard");
+} else if (data.user.role === "employer") {
+  navigate("/employer/dashboard");
+}
+
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Registration failed");
-    }
+  console.log("REGISTER ERROR:", err.response?.data);
+  setError(err.response?.data?.message || "Registration failed");
+}
 
-    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 px-4">
-      <div className="w-full max-w-md bg-white/95 rounded-2xl shadow-xl border border-slate-200 p-8">
-        <h1 className="text-3xl font-semibold text-center text-slate-800 mb-6">
-          Create an Account
-        </h1>
+    <div className="flex justify-center items-center min-h-screen bg-gray-100">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white p-8 rounded-lg shadow-md w-full max-w-md"
+      >
+        <h2 className="text-2xl font-bold mb-6 text-center">Register</h2>
 
-        {error && (
-          <p className="mb-4 bg-red-100 text-red-700 border border-red-300 px-3 py-2 rounded-md text-sm">
-            {error}
-          </p>
-        )}
+        {error && <p className="text-red-500 mb-3">{error}</p>}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <label className="block mb-3">
+          <span>Name</span>
           <input
-            type="text"
-            placeholder="Full Name"
-            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
+            className="mt-1 w-full border p-2 rounded"
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
+        </label>
 
+        <label className="block mb-3">
+          <span>Email</span>
           <input
             type="email"
-            placeholder="Email"
-            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
+            className="mt-1 w-full border p-2 rounded"
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
           />
+        </label>
 
+        <label className="block mb-3">
+          <span>Password</span>
           <input
             type="password"
-            placeholder="Password"
-            className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
+            className="mt-1 w-full border p-2 rounded"
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
           />
+        </label>
 
-          {/* Role select buttons */}
-          <div className="flex gap-2 text-sm">
-            <button
-              type="button"
-              onClick={() => setRole("candidate")}
-              className={`flex-1 rounded-lg border py-2 ${
-                role === "candidate"
-                  ? "border-blue-600 bg-blue-50 text-blue-700"
-                  : "border-slate-300 text-slate-600"
-              }`}
-            >
-              Candidate
-            </button>
-            <button
-              type="button"
-              onClick={() => setRole("employer")}
-              className={`flex-1 rounded-lg border py-2 ${
-                role === "employer"
-                  ? "border-blue-600 bg-blue-50 text-blue-700"
-                  : "border-slate-300 text-slate-600"
-              }`}
-            >
-              Employer
-            </button>
-          </div>
+        <label className="block mb-3">
+          <span>Role</span>
+          <select
+  className="mt-1 w-full border p-2 rounded"
+  value={form.role}   // <--- This is the fix
+  onChange={(e) => setForm({ ...form, role: e.target.value })}
+>
+  <option value="candidate">Candidate</option>
+  <option value="employer">Employer</option>
+</select>
 
-          <button
-            className="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition disabled:opacity-60"
-            disabled={loading}
-          >
-            {loading ? "Creating account..." : "Register"}
-          </button>
-        </form>
+        </label>
 
-        <p className="text-center text-sm text-slate-500 mt-6">
+        <button className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+          Register
+        </button>
+
+        <p className="mt-4 text-center text-sm">
           Already have an account?{" "}
-          <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+          <Link to="/login" className="text-blue-600">
             Login
           </Link>
         </p>
-      </div>
+      </form>
     </div>
   );
 }

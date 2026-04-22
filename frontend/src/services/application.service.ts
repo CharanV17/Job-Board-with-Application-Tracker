@@ -1,36 +1,53 @@
 import { api } from "./api";
-// import { CreateApplicationData } from "../types/application"; // 💡 Removed, as we'll define the required interface for clarity
-
-// 1. Define the interface for the specific data being submitted from ApplyJob.tsx
-interface CreateApplicationData {
-  jobId: string | undefined;
-  resumeUrl: string;
-  originalFileName: string;
-  fileSize: number;
-  coverLetter: string;
-}
 
 export const applicationService = {
-  // Candidate → Apply to job (Use the specific data interface instead of generic FormData)
-  apply: async (data: CreateApplicationData) =>
-    // Axios sends a JSON payload by default when using an object, which is what the backend expects
-    api.post("/applications", data).then((r) => r.data),
+  async apply(data: any) {
+    const token = localStorage.getItem("token");
 
-  // Candidate → Get my applications for dashboard
-  getMyApplications: async () =>
-    api.get("/applications/my").then((r) => r.data),
+    return api.post("/applications", data, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
 
-  // Candidate + Employer → View single application
-  getApplicationById: async (id: string) =>
-    api.get(`/applications/${id}`).then((r) => r.data),
+  async getMyApplications() {
+    const token = localStorage.getItem("token");
 
-  // Employer → Update application workflow status
-  updateStatus: async (appId: string, status: string) =>
-    api.put(`/applications/${appId}/status`, { status }).then((r) => r.data),
+    const res = await api.get("/applications/my", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-  // Employer → Get applications for a job posted by employer
-  getJobApplications: async (jobId: string) =>
-    api.get(`/employer/jobs/${jobId}/applications`).then((r) => r.data),
+    return res.data;
+  },
 
-  
+  async getApplicationsForJob(jobId: string) {
+    const token = localStorage.getItem("token");
+
+    const res = await api.get(`/applications/job/${jobId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return res.data;
+  },
+
+  async updateStatus(id: string, status: string) {
+    const token = localStorage.getItem("token");
+
+    const res = await api.put(
+      `/applications/${id}/status`,
+      { status },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    return res.data;
+  },
 };

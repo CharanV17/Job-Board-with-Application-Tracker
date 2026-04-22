@@ -1,101 +1,117 @@
 import { Request, Response } from "express";
-import User from "../models/user.model";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import User from "../models/user.model";
 
-const JWT_SECRET = process.env.JWT_SECRET as string;
-const JWT_EXPIRES = process.env.JWT_EXPIRES_IN || "1h";
+const signToken = (user: any) => {
+  return jwt.sign(
+    { userId: user._id.toString(), role: user.role },
+    process.env.JWT_SECRET as string,
+    { expiresIn: "1d" }
+  );
+};
 
-// REGISTER
 export const register = async (req: Request, res: Response) => {
-  const { name, email, password, role } = req.body;
-
-  if (!name || !email || !password || !role)
-    return res.status(400).json({ message: "Missing fields" });
-
-  const existing = await User.findOne({ email });
-  if (existing)
-    return res.status(409).json({ message: "Email already exists" });
-
-  const hash = await bcrypt.hash(password, 10);
-
-  const user = await User.create({
-    name,
-    email,
-    passwordHash: hash,
-    role,
-  });
-
-  const token = jwt.sign(
-    { id: user._id.toString(), role: user.role },
-    JWT_SECRET,
-    { expiresIn: JWT_EXPIRES }
-  );
-
-  return res.status(201).json({
-    message: "Registered successfully",
-    token,
-    user: {
-      _id: user._id, // <-- FIXED for frontend compatibility
-      name: user.name,
-      email: user.email,
-      role: user.role,
-    },
-  });
-};
-
-// LOGIN
-export const login = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
-
-  const user = await User.findOne({ email });
-  if (!user)
-    return res.status(401).json({ message: "Invalid credentials" });
-
-  const match = await bcrypt.compare(password, user.passwordHash);
-  if (!match)
-    return res.status(401).json({ message: "Invalid credentials" });
-
-  const token = jwt.sign(
-    { id: user._id.toString(), role: user.role },
-    JWT_SECRET,
-    { expiresIn: JWT_EXPIRES }
-  );
-
-  return res.json({
-    message: "Logged in", // <-- REQUIRED FOR FRONTEND
-    token,
-    user: {
-      _id: user._id, // <-- FIXED
-      name: user.name,
-      email: user.email,
-      role: user.role,
-    },
-  });
-};
-
-// ME
-export const me = async (req: Request, res: Response) => {
-  const header = req.header("Authorization");
-  if (!header) return res.status(401).json({ message: "No token" });
-
-  const token = header.replace("Bearer ", "");
-
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as {
-      id: string;
-      role: string;
-    };
+    const { name, email, password, role } = req.body;
+    const normalizedEmail = String(email || "").trim().toLowerCase();
 
-    const user = await User.findById(payload.id).select(
-      "_id name email role"
-    );
+    if (!name || !normalizedEmail || !password || !role) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required"
+      });
+    }
 
+    const exists = await User.findOne({ email: normalizedEmail });
+    if (exists) {
+      return res.status(400).json({
+        success: false,
+        message: "Email already registered"
+      });
+    }
+
+    const hashed = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
+      name,
+      email: normalizedEmail,
+      password: hashed,
+      role
+    });
+
+    const token = signToken(user);
+
+    return res.status(201).json({
+      success: true,
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (err) {
+    console.error("Register Error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
+  }
+};
+
+export const login = async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user)
-      return res.status(404).json({ message: "User not found" });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid email or password"
+      });
 
-    return res.json({ user }); // <-- frontend expects this
-  } catch {
-    return res.status(401).json({ message: "Invalid or expired token" });
+    const match = await bcrypt.compare(password, user.password);
+    if (!match)
+      return res.status(400).json({
+        success: false,
+        message: "Invalid email or password"
+      });
+
+    const token = signToken(user);
+
+    return res.json({
+      success: true,
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (err) {
+    console.error("Login Error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
+  }
+};
+
+export const me = async (req: any, res: Response) => {
+  try {
+    const userId = req.user.userId;
+    const user = await User.findById(userId).select("-password");
+
+    return res.json({ success: true, user });
+  } catch (err) {
+    console.error("me Error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
   }
 };

@@ -1,13 +1,35 @@
-import { Schema, model } from "mongoose";
+import mongoose, { Document, Schema } from "mongoose";
 
-export type Role = "employer" | "candidate";
+export interface IUser extends Document {
+  name: string;
+  email: string;
+  password: string;
+  role: "candidate" | "employer";
+  location?: string;
+  bio?: string;
+  skills?: string[];
+  resumeUrl?: string;
+}
 
-const UserSchema = new Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  passwordHash: { type: String, required: true },
-  role: { type: String, enum: ["employer","candidate"], required: true },
-  profile: { type: Schema.Types.Mixed, default: {} }
-}, { timestamps: true });
+const UserSchema = new Schema<IUser>(
+  {
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true, lowercase: true },
+    password: { type: String, required: true },
 
-export default model("User", UserSchema);
+    role: {
+      type: String,
+      enum: ["candidate", "employer"],
+      required: true,
+    },
+
+    // NEW PROFILE FIELDS
+    location: { type: String },
+    bio: { type: String },
+    skills: [{ type: String }],
+    resumeUrl: { type: String },
+  },
+  { timestamps: true }
+);
+
+export default mongoose.model<IUser>("User", UserSchema);

@@ -2,48 +2,63 @@ import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 import "express-async-errors";
-import authRoutes from "./routes/auth.routes";
-import jobRoutes from "./routes/jobs.routes";
+
 import applicationRoutes from "./routes/applications.routes";
 import errorHandler from "./middleware/errorHandler";
 import uploadRoutes from "./routes/upload.routes";
 import profileRoutes from "./routes/profile.routes";
-
+import jobsRoutes from "./routes/jobs.routes";
+import authRoutes from "./routes/auth.routes";
 
 const app = express();
 
-// 1. Define allowed origins (Crucial for fixing CORS error)
-const allowedOrigins = [
-    'http://localhost:5173', // Your development frontend
-    ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [])
-];
+// ❗ FIX: Helmet must NOT block CORS headers
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false,
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: false,
+  })
+);
 
-const corsOptions: cors.CorsOptions = {
-    origin: allowedOrigins,
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true, // Allows cookies/JWT tokens to be sent
-};
+// ⭐ FIXED CORS CONFIG — must match EXACT Vercel URL
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+
+      // Allow all Vercel deployments
+      if (origin.includes("vercel.app")) {
+        return callback(null, true);
+      }
+
+      // Local dev (Vite can run on different ports and localhost variants)
+      if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
 
 
-app.use(helmet());
-// 2. Apply CORS with specific options
-app.use(cors(corsOptions)); 
 app.use(express.json({ limit: "6mb" }));
 
-// Route Middlewares
+// Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/jobs", jobRoutes);
 app.use("/api/applications", applicationRoutes);
 app.use("/api/uploads", uploadRoutes);
 app.use("/api/profile", profileRoutes);
+app.use("/api/jobs", jobsRoutes);
 
-// Health Check
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
+// Health check
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
 });
 
-
-// Global Error Handler
+// Error handler
 app.use(errorHandler);
 
 export default app;

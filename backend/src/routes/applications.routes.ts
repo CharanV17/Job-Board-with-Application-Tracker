@@ -1,44 +1,59 @@
 import { Router } from "express";
-import { auth, requireRole } from "../middleware/auth";
+import { authMiddleware } from "../middleware/auth";
+import { requireRole } from "../middleware/role";
 import {
-  createApplication,
   getApplicationById,
   updateApplicationStatus,
-  getMyApplications
+  getApplicationsForJob,
+  getMyApplications,
+  createApplication,
 } from "../controllers/applications.controller";
-import { uploadResume } from "../config/s3"; // 🟢 S3 uploader
 
 const router = Router();
 
 /**
- * Candidate → Apply for job (resume upload)
+ * ⚠️ IMPORTANT:
+ * Static routes must come BEFORE dynamic "/:id" route.
+ * Otherwise "/my" and "/job/..." are interpreted as ":id".
  */
+
+// Candidate → list their own applications
+router.get(
+  "/my",
+  authMiddleware,
+  requireRole("candidate"),
+  getMyApplications
+);
+
+// Employer → list applications for a job they posted
+router.get(
+  "/job/:jobId",
+  authMiddleware,
+  requireRole("employer"),
+  getApplicationsForJob
+);
+
+// Candidate applies for a job
 router.post(
   "/",
-  auth,
+  authMiddleware,
   requireRole("candidate"),
-  uploadResume.single("resume"),   // 🟢 Upload resume to S3
   createApplication
 );
 
-/**
- * Candidate → My applications
- */
-router.get("/my", auth, requireRole("candidate"), getMyApplications);
-
-/**
- * Candidate + Employer → View application
- */
-router.get("/:id", auth, getApplicationById);
-
-/**
- * Employer → Update status
- */
+// Employer updates status
 router.put(
   "/:id/status",
-  auth,
+  authMiddleware,
   requireRole("employer"),
   updateApplicationStatus
+);
+
+// LAST → Candidate or employer → view application by ID
+router.get(
+  "/:id",
+  authMiddleware,
+  getApplicationById
 );
 
 export default router;

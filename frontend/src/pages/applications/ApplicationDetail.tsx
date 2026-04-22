@@ -1,134 +1,101 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { applicationService } from "../../services/application.service";
+import { useParams, Link } from "react-router-dom";
+import axios from "axios";
 import { useAuthStore } from "../../store/auth";
 
 export default function ApplicationDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
+  const token = useAuthStore((s: any) => s.token);
 
-  const user = useAuthStore((s) => s.user);
-  const [app, setApp] = useState<any>(null);
+  const [application, setApplication] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [newStatus, setNewStatus] = useState("");
 
-  const fetchApplication = async () => {
+  const fetchDetails = async () => {
+    setLoading(true);
     try {
-      const data = await applicationService.getApplicationById(id!);
-      setApp(data);
+      const res = await axios.get(
+        `http://localhost:4000/api/applications/${id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setApplication(res.data);
     } catch (err) {
-      console.error(err);
-      alert("Application not found");
-      navigate("/dashboard");
+      console.error("Failed to fetch application details:", err);
     }
     setLoading(false);
   };
 
   useEffect(() => {
-    fetchApplication();
+    fetchDetails();
   }, []);
 
-  const handleStatusUpdate = async () => {
-    if (!newStatus) return;
+  if (loading) return <div className="p-6 text-center">Loading...</div>;
+  if (!application) return <div className="p-6 text-center">Application not found</div>;
 
-    try {
-      await applicationService.updateStatus(app._id, newStatus);
-      alert("Status updated!");
-      fetchApplication(); // Refresh
-    } catch (err: any) {
-      alert("Failed to update status");
-    }
-  };
-
-  if (loading) return <div className="text-center py-20">Loading...</div>;
-  if (!app) return null;
-
-  const job = app.job;
-  const isEmployer = user?.role === "employer";
+  const job = application.job;
+  const history = application.statusHistory || [];
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-3xl font-semibold mb-4">Application Details</h1>
+      <Link to="/applications" className="text-blue-600 underline text-sm">
+        ← Back to My Applications
+      </Link>
 
-      {/* Job Info */}
-      <div className="bg-white shadow rounded p-5 mb-6">
-        <h2 className="text-xl font-semibold">{job.title}</h2>
-        <p className="text-gray-600">{job.location}</p>
-        <p className="text-gray-500 mt-2">
-          Salary: ₹{job.salaryMin} - ₹{job.salaryMax}
-        </p>
-      </div>
+      {/* Job Title */}
+      <h1 className="text-3xl font-bold mt-4">{job.title}</h1>
 
-      {/* Resume + Cover Letter */}
-      <div className="bg-white shadow rounded p-5 mb-6">
-        <h3 className="text-lg font-semibold mb-2">Resume</h3>
-        <a
-          href={app.resumeUrl}
-          target="_blank"
-          className="text-blue-600 underline"
-        >
-          View Resume (PDF)
-        </a>
-
-        {app.coverLetter && (
-          <>
-            <h3 className="text-lg font-semibold mt-4 mb-2">Cover Letter</h3>
-            <p className="text-gray-700 whitespace-pre-line">{app.coverLetter}</p>
-          </>
-        )}
-      </div>
+      <p className="text-gray-700">{job.company}</p>
+      <p className="text-gray-600 text-sm">{job.location}</p>
+      {job.isRemote && (
+        <p className="text-green-600 text-sm font-semibold mt-1">Remote</p>
+      )}
 
       {/* Status */}
-      <div className="bg-white shadow rounded p-5 mb-6">
-        <h3 className="text-lg font-semibold mb-3">Current Status</h3>
-        <p className="inline-block px-3 py-1 bg-gray-200 rounded text-sm">
-          {app.status}
-        </p>
-
-        {/* Employer can update status */}
-        {isEmployer && (
-          <div className="mt-5">
-            <label className="block mb-2 text-sm">Update Status</label>
-            <select
-              className="border p-2 rounded"
-              value={newStatus}
-              onChange={(e) => setNewStatus(e.target.value)}
-            >
-              <option value="">Select</option>
-              <option value="Screening">Screening</option>
-              <option value="Interview">Interview</option>
-              <option value="Offer">Offer</option>
-              <option value="Rejected">Rejected</option>
-            </select>
-
-            <button
-              onClick={handleStatusUpdate}
-              className="ml-3 px-4 py-2 bg-blue-600 text-white rounded"
-            >
-              Update
-            </button>
-          </div>
-        )}
+      <div className="mt-4">
+        <span className="font-semibold">Current Status:</span>{" "}
+        <span className="px-2 py-1 bg-blue-100 rounded">
+          {application.status}
+        </span>
       </div>
 
-      {/* Status History */}
-      <div className="bg-white shadow rounded p-5">
-        <h3 className="text-lg font-semibold mb-3">Status History</h3>
+      {/* Status Timeline */}
+      <div className="mt-6">
+        <h2 className="text-xl font-semibold">Status History</h2>
+        <div className="mt-3 space-y-3">
+          {history.map((item: any, index: number) => (
+            <div
+              key={index}
+              className="p-3 border rounded bg-gray-50 flex justify-between"
+            >
+              <div>
+                <p className="font-semibold">{item.status}</p>
+                <p className="text-xs text-gray-500">
+                  Updated by: {item.changedBy === application.candidate._id ? "You" : "Employer"}
+                </p>
+              </div>
 
-        {app.statusHistory.length === 0 && (
-          <p className="text-gray-500">No status changes yet.</p>
-        )}
-
-        {app.statusHistory.map((h: any, index: number) => (
-          <div key={index} className="border-b py-2">
-            <p className="font-medium">{h.status}</p>
-            <p className="text-gray-500 text-sm">
-              {new Date(h.at).toLocaleString()}
-            </p>
-          </div>
-        ))}
+              <p className="text-xs text-gray-500">
+                {new Date(item.at).toLocaleString()}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
+
+      {/* Job Description */}
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-2">Job Description</h2>
+        <p className="text-gray-700 whitespace-pre-line">{job.description}</p>
+      </div>
+
+      {/* Requirements */}
+      {job.requirements && (
+        <div className="mt-6">
+          <h2 className="text-xl font-semibold mb-2">Requirements</h2>
+          <p className="text-gray-700 whitespace-pre-line">{job.requirements}</p>
+        </div>
+      )}
     </div>
   );
 }
-

@@ -1,117 +1,122 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { applicationService } from "../../services/application.service";
-import { useAuthStore } from "../../store/auth";
+
+interface Application {
+  _id: string;
+  status: string;
+  resumeUrl: string;
+  coverLetter: string;
+  createdAt: string;
+  candidate: {
+    name: string;
+    email: string;
+  };
+}
 
 export default function JobApplications() {
   const { jobId } = useParams();
-  const navigate = useNavigate();
-  const user = useAuthStore((s) => s.user);
 
-  const [applications, setApplications] = useState([]);
+  const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchApps = async () => {
+  const fetchApplications = async () => {
     try {
-      const data = await applicationService.getJobApplications(jobId!);
-      setApplications(data);
+     const data = await applicationService.getApplicationsForJob(jobId!);
+
+      setApplications(data.applications || []);
     } catch (err) {
-      console.error(err);
-      alert("Failed to fetch applications");
+      console.error("Failed to load job applications:", err);
     }
     setLoading(false);
   };
 
   useEffect(() => {
-    if (!user || user.role !== "employer") {
-      navigate("/jobs");
-      return;
-    }
-    fetchApps();
+    fetchApplications();
   }, []);
 
-  const updateStatus = async (appId: string, status: string) => {
+  const updateStatus = async (id: string, status: string) => {
     try {
-      await applicationService.updateStatus(appId, status);
-      fetchApps();
+      await applicationService.updateStatus(id, status);
+
+      fetchApplications(); // refresh
     } catch (err) {
       alert("Failed to update status");
     }
   };
 
-  if (loading) return <div className="text-center py-20">Loading...</div>;
+  if (loading) {
+    return <div className="p-6 text-center">Loading applications...</div>;
+  }
 
   return (
     <div className="max-w-5xl mx-auto p-6">
-      <h1 className="text-3xl font-semibold mb-6">Applications for Job</h1>
+      <h1 className="text-2xl font-bold mb-6">Applications for this Job</h1>
 
-      <div className="space-y-4">
-        {applications.map((app: any) => (
-          <div
-            key={app._id}
-            className="p-5 bg-white rounded shadow hover:shadow-md transition"
-          >
-            <div className="flex justify-between">
+      {applications.length === 0 ? (
+        <p className="text-gray-600">No applications yet.</p>
+      ) : (
+        <div className="space-y-4">
+          {applications.map((app) => (
+            <div
+              key={app._id}
+              className="bg-white p-4 rounded-lg shadow flex flex-col md:flex-row justify-between gap-4"
+            >
               <div>
-                <h2 className="text-lg font-semibold">
-                  {app.candidate?.name || "Candidate"}
-                </h2>
-                <p className="text-gray-600">{app.candidate?.email}</p>
+                <h2 className="text-lg font-semibold">{app.candidate.name}</h2>
+                <p className="text-gray-600">{app.candidate.email}</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  Applied on {new Date(app.createdAt).toLocaleDateString()}
+                </p>
 
-                <div className="text-sm text-gray-700 mt-2">
-                  Status:
-                  <span className="ml-2 font-medium bg-gray-200 px-2 py-1 rounded">
-                    {app.status}
-                  </span>
-                </div>
-
+                {/* Cover Letter */}
                 {app.coverLetter && (
-                  <p className="mt-4 text-gray-700 whitespace-pre-line">
-                    {app.coverLetter}
+                  <p className="mt-2 text-gray-700">
+                    <strong>Cover Letter:</strong> {app.coverLetter}
                   </p>
                 )}
 
+                {/* Resume Link */}
                 <a
                   href={app.resumeUrl}
                   target="_blank"
-                  className="text-blue-600 underline mt-3 inline-block"
+                  className="text-blue-600 underline mt-2 block"
                 >
                   View Resume (PDF)
                 </a>
               </div>
 
-              <div className="flex flex-col gap-2 items-end">
+              {/* Status Controls */}
+              <div className="flex flex-col gap-2 w-full md:w-40">
+                <span className="text-sm font-semibold text-gray-500">
+                  Status: {app.status}
+                </span>
+
                 <button
-                  className="px-3 py-1 bg-gray-200 rounded"
-                  onClick={() => navigate(`/applications/${app._id}`)}
+                  onClick={() => updateStatus(app._id, "Shortlisted")}
+                  className="px-3 py-1 bg-yellow-500 text-white rounded text-sm hover:bg-yellow-600"
                 >
-                  View Details
+                  Shortlist
                 </button>
 
-                {/* STATUS UPDATE */}
-                <select
-                  onChange={(e) => updateStatus(app._id, e.target.value)}
-                  className="border p-2 rounded"
-                  defaultValue=""
+                <button
+                  onClick={() => updateStatus(app._id, "Rejected")}
+                  className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600"
                 >
-                  <option value="" disabled>
-                    Update Status
-                  </option>
-                  <option value="Screening">Screening</option>
-                  <option value="Interview">Interview</option>
-                  <option value="Offer">Offer</option>
-                  <option value="Rejected">Rejected</option>
-                </select>
+                  Reject
+                </button>
+
+                <button
+                  onClick={() => updateStatus(app._id, "Hired")}
+                  className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                >
+                  Hire
+                </button>
               </div>
             </div>
-          </div>
-        ))}
-
-        {applications.length === 0 && (
-          <p className="text-center text-gray-500">No applications yet.</p>
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
-

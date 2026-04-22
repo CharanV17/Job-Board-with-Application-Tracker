@@ -7,20 +7,20 @@ interface Props {
 }
 
 export default function ProtectedRoute({ children, role }: Props) {
-  const user = useAuthStore((s) => s.user);
-  const isLoading = useAuthStore((s) => s.loading);
+  const user = useAuthStore((s: any) => s.user);
+  const loading = useAuthStore((s: any) => s.loading);
 
-  // Wait for auth initialization
-  if (isLoading) {
+  // Wait while auth initializes
+  if (loading) {
     return <div className="text-center py-20">Loading...</div>;
   }
 
-  // Redirect if not logged in
+  // User not logged in
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
-  // Role-based restriction
+  // Role-based protection
   if (role && user.role !== role) {
     return <Navigate to="/" replace />;
   }

@@ -4,20 +4,15 @@ const ApplicationSchema = new Schema(
   {
     job: { type: Schema.Types.ObjectId, ref: "Job", required: true },
     candidate: { type: Schema.Types.ObjectId, ref: "User", required: true },
-
-    // 🟢 Store resume URL instead of binary buffer
     resumeUrl: { type: String, required: true },
     originalFileName: String,
     fileSize: Number,
-
     coverLetter: String,
-
     status: {
       type: String,
       enum: ["Applied", "Screening", "Interview", "Offer", "Rejected"],
       default: "Applied",
     },
-
     statusHistory: [
       {
         status: String,

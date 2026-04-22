@@ -15,10 +15,19 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [fileName, setFileName] = useState("");
+
+  // ============================
+  // LOAD PROFILE
+  // ============================
+
+      useEffect(() => {
+ console.log("userdata",form)
+  }, [form]);
 
   const loadProfile = async () => {
     const data = await profileService.getProfile();
-
+console.log(api)
     setForm({
       name: data.name || "",
       location: data.location || "",
@@ -30,10 +39,14 @@ export default function Profile() {
     setLoading(false);
   };
 
+
   useEffect(() => {
     loadProfile();
   }, []);
 
+  // ============================
+  // HANDLE INPUT
+  // ============================
   const handleChange = (e: any) => {
     setForm({
       ...form,
@@ -41,40 +54,61 @@ export default function Profile() {
     });
   };
 
+  // ============================
+  // RESUME UPLOAD (S3)
+  // ============================
   const uploadResume = async () => {
-    if (!file) return alert("Select a file");
+    if (!file) return alert("Select a file first");
+
+    if (file.type !== "application/pdf") {
+      return alert("Please upload a PDF file only");
+    }
 
     setUploading(true);
 
-    const presign = await api.get("/uploads/presign", {
-      params: {
-        filename: file.name,
-        contentType: file.type,
-      },
-    });
+    try {
+      const presign = await api.get("/uploads/presign", {
+        params: {
+          filename: file.name,
+          contentType: file.type,
+        },
+      });
 
-    const { uploadUrl, fileUrl } = presign.data;
+      const { uploadUrl, fileUrl } = presign.data;
 
-    await fetch(uploadUrl, {
-      method: "PUT",
-      body: file,
-      headers: { "Content-Type": file.type },
-    });
+      // Upload to S3
+      await fetch(uploadUrl, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
 
-    setForm({ ...form, resumeUrl: fileUrl });
+      setForm({ ...form, resumeUrl: fileUrl });
+      alert("Resume uploaded successfully!");
+    } catch (error) {
+      console.error(error);
+      alert("Upload failed. Try again.");
+    }
+
     setUploading(false);
   };
 
+  // ============================
+  // SAVE PROFILE
+  // ============================
   const saveProfile = async () => {
     setSaving(true);
 
     await profileService.updateProfile({
       ...form,
-      skills: form.skills.split(",").map((s) => s.trim()),
+      skills: form.skills
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0),
     });
 
-    alert("Profile updated");
     setSaving(false);
+    alert("Profile updated successfully!");
   };
 
   if (loading) return <div className="py-20 text-center">Loading...</div>;
@@ -87,7 +121,7 @@ export default function Profile() {
 
         {/* Name */}
         <div>
-          <label className="block mb-1">Name</label>
+          <label className="block mb-1 font-medium">Name</label>
           <input
             name="name"
             value={form.name}
@@ -98,7 +132,7 @@ export default function Profile() {
 
         {/* Location */}
         <div>
-          <label className="block mb-1">Location</label>
+          <label className="block mb-1 font-medium">Location</label>
           <input
             name="location"
             value={form.location}
@@ -109,7 +143,7 @@ export default function Profile() {
 
         {/* Bio */}
         <div>
-          <label className="block mb-1">Bio</label>
+          <label className="block mb-1 font-medium">Bio</label>
           <textarea
             name="bio"
             value={form.bio}
@@ -120,7 +154,7 @@ export default function Profile() {
 
         {/* Skills */}
         <div>
-          <label className="block mb-1">Skills (comma-separated)</label>
+          <label className="block mb-1 font-medium">Skills (comma-separated)</label>
           <input
             name="skills"
             value={form.skills}
@@ -129,25 +163,34 @@ export default function Profile() {
           />
         </div>
 
-        {/* RESUME UPLOAD */}
+        {/* Resume Upload */}
         <div>
-          <label className="block mb-2">Resume (PDF)</label>
+          <label className="block mb-2 font-medium">Resume (PDF Only)</label>
 
+          {/* Existing resume */}
           {form.resumeUrl && (
             <a
               href={form.resumeUrl}
               target="_blank"
               className="text-blue-600 underline block mb-2"
+              rel="noreferrer"
             >
               View Current Resume
             </a>
           )}
 
+          {/* File picker */}
           <input
             type="file"
             accept="application/pdf"
-            onChange={(e: any) => setFile(e.target.files[0])}
+            onChange={(e: any) => {
+              setFile(e.target.files[0]);
+              setFileName(e.target.files[0]?.name || "");
+            }}
           />
+
+          {/* File name display */}
+          {fileName && <p className="text-sm text-gray-600 mt-1">{fileName}</p>}
 
           <button
             disabled={!file || uploading}
@@ -158,7 +201,7 @@ export default function Profile() {
           </button>
         </div>
 
-        {/* SAVE */}
+        {/* Save Button */}
         <button
           disabled={saving}
           onClick={saveProfile}
@@ -170,4 +213,3 @@ export default function Profile() {
     </div>
   );
 }
-

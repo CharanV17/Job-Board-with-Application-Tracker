@@ -1,6 +1,5 @@
-import { useParams, useNavigate } from "react-router-dom";
-import { useAuthStore } from "../../store/auth";
 import { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { uploadService } from "../../services/upload.service";
 import { applicationService } from "../../services/application.service";
 
@@ -8,118 +7,93 @@ export default function ApplyJob() {
   const { id: jobId } = useParams();
   const navigate = useNavigate();
 
-  const user = useAuthStore((s) => s.user);
-  const token = useAuthStore((s) => s.token);
-
   const [file, setFile] = useState<File | null>(null);
+  const [resumeUrl, setResumeUrl] = useState("");
   const [coverLetter, setCoverLetter] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
-
-  // Redirect if not candidate
-  if (!token) navigate("/login");
-  if (user?.role === "employer") navigate("/jobs/" + jobId);
+  const [uploading, setUploading] = useState(false);
 
   const handleFileChange = (e: any) => {
     const f = e.target.files[0];
     if (!f) return;
 
     if (f.type !== "application/pdf") {
-      alert("PDF only");
-      return;
-    }
-
-    if (f.size > 5 * 1024 * 1024) {
-      alert("File too large. Max 5MB.");
+      alert("Only PDF allowed");
       return;
     }
 
     setFile(f);
   };
 
-  const handleApply = async () => {
-    if (!file) {
-      alert("Please upload your resume");
-      return;
-    }
-
-    setLoading(true);
+  const uploadResume = async () => {
+    if (!file) return alert("Choose a file");
 
     try {
-      // 1. PRESIGN request
-      const presign = await uploadService.getPresignedUrl(
-        file.name,
-        file.type
-      );
+      setUploading(true);
 
-      // 2. Upload to S3
+      const presign = await uploadService.getPresignedUrl(file.name, file.type);
+
       await uploadService.uploadToS3(presign.uploadUrl, file);
 
-      // 3. Create Application
+      setResumeUrl(presign.fileUrl);
+
+      alert("Resume Uploaded!");
+    } catch (err) {
+      console.error(err);
+      alert("Resume upload failed");
+    }
+
+    setUploading(false);
+  };
+
+  const submit = async () => {
+    if (!resumeUrl) return alert("Upload resume first");
+
+    try {
       await applicationService.apply({
         jobId,
-        resumeUrl: presign.publicUrl,
-        originalFileName: file.name,
-        fileSize: file.size,
+        resumeUrl,
+        originalFileName: file?.name,
+        fileSize: file?.size,
         coverLetter,
       });
 
-      setMsg("Application submitted!");
-      setTimeout(() => navigate("/dashboard"), 1200);
-
-    } catch (err: any) {
+      alert("Application Submitted!");
+      navigate("/candidate/dashboard"); // Candidate Dashboard
+    } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || "Failed to apply");
+      alert("Submit failed");
     }
-
-    setLoading(false);
   };
 
   return (
-    <div className="max-w-2xl mx-auto py-12 px-4">
-      <h1 className="text-3xl font-semibold mb-6">Apply for Job</h1>
+    <div className="max-w-3xl mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-4">Apply Job</h1>
 
-      <div className="bg-white shadow p-6 rounded-lg space-y-6">
+      <input type="file" accept="application/pdf" onChange={handleFileChange} />
 
-        {msg && (
-          <div className="text-green-700 bg-green-100 p-3 rounded">
-            {msg}
-          </div>
-        )}
+      <button
+        className="mt-3 bg-blue-600 text-white px-4 py-2"
+        onClick={uploadResume}
+        disabled={!file || uploading}
+      >
+        {uploading ? "Uploading..." : "Upload Resume"}
+      </button>
 
-        {/* Resume Upload */}
-        <div>
-          <label className="block font-medium mb-2">Upload Resume (PDF, max 5MB)</label>
-          <input
-            type="file"
-            accept="application/pdf"
-            onChange={handleFileChange}
-            className="border p-2 rounded w-full"
-          />
-        </div>
+      {resumeUrl && <p className="text-green-600 mt-2">Resume uploaded!</p>}
 
-        {/* Cover Letter */}
-        <div>
-          <label className="block font-medium mb-2">Cover Letter (optional)</label>
-          <textarea
-            className="border p-2 rounded w-full h-32"
-            value={coverLetter}
-            onChange={(e) => setCoverLetter(e.target.value)}
-            placeholder="Write a brief cover letter here..."
-          />
-        </div>
+      <textarea
+        className="mt-4 w-full border p-3"
+        placeholder="Cover Letter..."
+        onChange={(e) => setCoverLetter(e.target.value)}
+      />
 
-        <div className="pt-4">
-          <button
-            disabled={loading}
-            onClick={handleApply}
-            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition disabled:opacity-50"
-          >
-            {loading ? "Submitting..." : "Submit Application"}
-          </button>
-        </div>
-
-      </div>
+      <button
+        className="mt-6 bg-green-600 text-white px-6 py-2"
+        onClick={submit}
+        disabled={!resumeUrl}
+      >
+        Submit Application
+      </button>
     </div>
   );
 }

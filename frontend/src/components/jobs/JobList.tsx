@@ -1,61 +1,41 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { jobService } from "../../services/job.service";
 import JobFilterBar from "../../components/jobs/JobFilterBar";
-import EmptyState from "../../components/ui/EmptyState";   // ⬅️ added
+
+import JobCard from "./JobCard";
+
 
 export default function JobList() {
-  const [filters, setFilters] = useState({});
-  const [jobs, setJobs] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const fetchJobs = async (params = {}) => {
+  const fetchJobs = async (query = {}) => {
     setLoading(true);
-    const data = await jobService.getJobs(params);
-    setJobs(data.jobs || data);
+    const data = await jobService.getJobs(query);
+    setJobs(data.jobs ?? []);
     setLoading(false);
+  };
+
+  const handleFilter = (filters: any) => {
+    fetchJobs(filters);
   };
 
   useEffect(() => {
     fetchJobs();
   }, []);
 
-  const handleFilter = (f: any) => {
-    const params: any = {};
-
-    if (f.search) params.search = f.search;
-    if (f.location) params.location = f.location;
-    if (f.remote) params.remote = true;
-    if (f.salaryMin) params.salaryMin = Number(f.salaryMin);
-    if (f.salaryMax) params.salaryMax = Number(f.salaryMax);
-
-    fetchJobs(params);
-  };
-
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      {/* 🔍 Filter Bar */}
+    <div className="max-w-6xl mx-auto p-4">
       <JobFilterBar onFilter={handleFilter} />
 
-      <h1 className="text-3xl font-semibold mt-6 mb-4">Available Jobs</h1>
-
       {loading ? (
-        <p>Loading...</p>
+        <p>Loading jobs...</p>
       ) : jobs.length === 0 ? (
-        // ⬇️ Empty State (STEP 2)
-        <EmptyState
-          title="No jobs found"
-          message="Try adjusting filters or search keywords."
-        />
+        <p className="text-center mt-10 text-gray-500">No jobs found</p>
       ) : (
-        <div className="grid md:grid-cols-2 gap-4">
-          {jobs.map((job) => (
-            <div key={job._id} className="p-4 shadow rounded bg-white">
-              <h2 className="text-lg font-semibold">{job.title}</h2>
-              <p className="text-gray-600">{job.location}</p>
-              <p className="text-gray-500 text-sm mt-1">
-                Salary: ₹{job.salaryMin} - ₹{job.salaryMax}
-              </p>
-            </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-5">
+          {jobs.map((job: any) => (
+            <JobCard key={job._id} job={job} />
           ))}
         </div>
       )}

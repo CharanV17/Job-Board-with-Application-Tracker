@@ -1,79 +1,77 @@
 import { useState } from "react";
+import SortDropdown from "./SortDropdown";
 
-interface Props {
-  onFilter: (filters: any) => void;
-}
+export default function JobFilterBar({ onFilter }: any) {
+  const [keyword, setKeyword] = useState("");
+  const [location, setLocation] = useState("");
+  const [remote, setRemote] = useState("all");
+  const [minSalary, setMinSalary] = useState("");
+  const [maxSalary, setMaxSalary] = useState("");
+  const [sort, setSort] = useState("date");
 
-export default function JobFilterBar({ onFilter }: Props) {
-  const [filters, setFilters] = useState({
-    search: "",
-    location: "",
-    remote: false,
-    salaryMin: "",
-    salaryMax: ""
-  });
-
-  const handleChange = (e: any) => {
-    const { name, value, type, checked } = e.target;
-
-    setFilters({
-      ...filters,
-      [name]: type === "checkbox" ? checked : value,
+  const apply = () => {
+    onFilter({
+      keyword,
+      location,
+      minSalary: minSalary ? Number(minSalary) : undefined,
+      maxSalary: maxSalary ? Number(maxSalary) : undefined,
+      remote: remote === "all" ? undefined : remote === "remote",
+      sort,
     });
-  };
-
-  const applyFilters = () => {
-    onFilter(filters);
   };
 
   return (
     <div className="bg-white shadow p-4 rounded mb-6">
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
         <input
-          name="search"
-          placeholder="Search title / skills"
-          className="border p-2 rounded"
-          onChange={handleChange}
+          className="border p-2 rounded w-full"
+          placeholder="Keyword (React, Backend...)"
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
         />
 
         <input
-          name="location"
-          placeholder="Location"
-          className="border p-2 rounded"
-          onChange={handleChange}
+          className="border p-2 rounded w-full"
+          placeholder="Location (Bengaluru...)"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
         />
 
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            name="remote"
-            onChange={handleChange}
-          />
-          Remote?
-        </label>
+        <select
+          className="border p-2 rounded w-full"
+          value={remote}
+          onChange={(e) => setRemote(e.target.value)}
+        >
+          <option value="all">Remote + On-site</option>
+          <option value="remote">Remote Only</option>
+          <option value="onsite">On-site Only</option>
+        </select>
 
-        <input
-          name="salaryMin"
-          type="number"
-          placeholder="Min Salary"
-          className="border p-2 rounded"
-          onChange={handleChange}
-        />
-
-        <input
-          name="salaryMax"
-          type="number"
-          placeholder="Max Salary"
-          className="border p-2 rounded"
-          onChange={handleChange}
-        />
+        <SortDropdown value={sort} onChange={setSort} />
       </div>
 
-      <div className="mt-4">
+      {/* Salary Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+        <input
+          type="number"
+          className="border p-2 rounded w-full"
+          placeholder="Min ₹"
+          value={minSalary}
+          onChange={(e) => setMinSalary(e.target.value)}
+        />
+
+        <input
+          type="number"
+          className="border p-2 rounded w-full"
+          placeholder="Max ₹"
+          value={maxSalary}
+          onChange={(e) => setMaxSalary(e.target.value)}
+        />
+
         <button
-          onClick={applyFilters}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          onClick={apply}
+          className="bg-blue-600 text-white px-4 py-2 rounded w-full col-span-2 sm:col-span-1"
         >
           Apply Filters
         </button>

@@ -1,61 +1,40 @@
-import { Router } from "express";
+import express from "express";
 import {
-  createJob,
-  listJobs,
-  getJob,
-  updateJob,
-  deleteJob,
+  getJobs,
   getEmployerJobs,
-  getJobApplications
+  updateJob,
+  createJob,
+  getJobById ,
 } from "../controllers/jobs.controller";
+import { authMiddleware } from "../middleware/auth";
+import { requireRole } from "../middleware/role";
+const router = express.Router();
 
-import { auth, requireRole } from "../middleware/auth";
-import { validate } from "../middleware/validate";
-import { createJobSchema, updateJobSchema } from "../validators/job.validators";
+// Public: search/list jobs with filters
+router.get("/", getJobs);
 
-const router = Router();
-
-// Create job (Employer only)
+// Employer: create a new job
 router.post(
   "/",
-  auth,
+  authMiddleware,
   requireRole("employer"),
-  validate(createJobSchema),
   createJob
 );
 
-// Public job listing
-router.get("/", listJobs);
-
-// Public job detail
-router.get("/:id", auth, getJob);
-
-// Update job (Employer only)
-router.put(
-  "/:id",
-  auth,
-  requireRole("employer"),
-  validate(updateJobSchema),
-  updateJob
-);
-
-// Delete job (Employer only)
-router.delete("/:id", auth, requireRole("employer"), deleteJob);
-
-// Employer's own jobs
+// Employer: list own jobs
 router.get(
-  "/employer/jobs",
-  auth,
+  "/employer/my-jobs",
+  authMiddleware,
   requireRole("employer"),
   getEmployerJobs
 );
 
-// Employer gets applications for a job
-router.get(
-  "/:id/applications",
-  auth,
+// Employer: update job
+router.put(
+  "/:id",
+  authMiddleware,
   requireRole("employer"),
-  getJobApplications
+  updateJob
 );
-
+router.get("/:id", getJobById);
 export default router;

@@ -1,152 +1,107 @@
 import { useState } from "react";
 import { jobService } from "../../services/job.service";
-import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/auth";
+import { useNavigate } from "react-router-dom";
 
 export default function CreateJob() {
   const navigate = useNavigate();
-  const user = useAuthStore((s) => s.user);
-
-  // Redirect if not employer
-  if (!user || user.role !== "employer") {
-    navigate("/jobs");
-  }
+  const token = useAuthStore((s: any) => s.token);
 
   const [form, setForm] = useState({
     title: "",
-    description: "",
+    company: "",
     location: "",
-    remote: false,
+    isRemote: false,
     salaryMin: "",
     salaryMax: "",
-    tags: ""
+    description: "",
   });
 
-  const [loading, setLoading] = useState(false);
-
-  const handleChange = (e: any) => {
-    const { name, value, type, checked } = e.target;
-    setForm({
-      ...form,
-      [name]: type === "checkbox" ? checked : value
-    });
-  };
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    setLoading(true);
 
     try {
-      await jobService.createJob({
+      const payload = {
         ...form,
         salaryMin: Number(form.salaryMin),
         salaryMax: Number(form.salaryMax),
-        tags: form.tags
-          .split(",")
-          .map((t) => t.trim())
-          .filter((t) => t.length > 0)
-      });
+      };
 
-      alert("Job created successfully!");
-      navigate("/employer/dashboard");
+      await jobService.createJob(payload, token);
 
-    } catch (err: any) {
-      alert(err.response?.data?.message || "Failed to create job");
+      navigate("/employer/jobs");
+    } catch (err) {
+      console.error(err);
+      setError("Failed to create job");
     }
-
-    setLoading(false);
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <h1 className="text-3xl font-semibold mb-6">Create New Job</h1>
+    <div className="p-6 max-w-xl mx-auto">
+      <h2 className="text-2xl font-bold mb-4">Post a Job</h2>
 
-      <form className="space-y-5 bg-white shadow p-6 rounded" onSubmit={handleSubmit}>
-        
-        <div>
-          <label className="block mb-1">Job Title</label>
+      {error && <p className="text-red-500 mb-3">{error}</p>}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+
+        <input
+          className="w-full border p-2 rounded"
+          placeholder="Job Title"
+          onChange={(e) => setForm({ ...form, title: e.target.value })}
+          required
+        />
+
+        <input
+          className="w-full border p-2 rounded"
+          placeholder="Company"
+          onChange={(e) => setForm({ ...form, company: e.target.value })}
+          required
+        />
+
+        <input
+          className="w-full border p-2 rounded"
+          placeholder="Location"
+          onChange={(e) => setForm({ ...form, location: e.target.value })}
+          required
+        />
+
+        <label className="flex items-center gap-2">
           <input
-            name="title"
-            className="border p-2 rounded w-full"
-            onChange={handleChange}
+            type="checkbox"
+            onChange={(e) => setForm({ ...form, isRemote: e.target.checked })}
+          />
+          Remote
+        </label>
+
+        <div className="flex gap-3">
+          <input
+            className="w-full border p-2 rounded"
+            placeholder="Min Salary"
+            onChange={(e) => setForm({ ...form, salaryMin: e.target.value })}
+            required
+          />
+          <input
+            className="w-full border p-2 rounded"
+            placeholder="Max Salary"
+            onChange={(e) => setForm({ ...form, salaryMax: e.target.value })}
             required
           />
         </div>
 
-        <div>
-          <label className="block mb-1">Description</label>
-          <textarea
-            name="description"
-            className="border p-2 rounded w-full h-32"
-            onChange={handleChange}
-            required
-          />
-        </div>
+        <textarea
+          className="w-full border p-2 rounded"
+          placeholder="Job Description"
+          rows={4}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          required
+        ></textarea>
 
-        <div>
-          <label className="block mb-1">Location</label>
-          <input
-            name="location"
-            className="border p-2 rounded w-full"
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        <div>
-          <label className="inline-flex items-center gap-2">
-            <input
-              type="checkbox"
-              name="remote"
-              checked={form.remote}
-              onChange={handleChange}
-            />
-            Remote Position?
-          </label>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block mb-1">Salary Min</label>
-            <input
-              name="salaryMin"
-              type="number"
-              className="border p-2 rounded w-full"
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block mb-1">Salary Max</label>
-            <input
-              name="salaryMax"
-              type="number"
-              className="border p-2 rounded w-full"
-              onChange={handleChange}
-              required
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block mb-1">Skills (comma-separated)</label>
-          <input
-            name="tags"
-            className="border p-2 rounded w-full"
-            placeholder="JavaScript, React, Node.js"
-            onChange={handleChange}
-          />
-        </div>
-
-        <button
-          disabled={loading}
-          className="bg-blue-600 text-white px-6 py-2 rounded shadow hover:bg-blue-700 disabled:opacity-50"
-        >
-          {loading ? "Creating..." : "Create Job"}
+        <button className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+          Create Job
         </button>
       </form>
     </div>
   );
 }
-

@@ -1,40 +1,53 @@
 import { create } from "zustand";
-import { authService } from "../services/auth.service";
 
-interface AuthState {
-  user: any | null;
-  token: string | null;
-  loading: boolean;
-  setAuth: (user: any, token: string) => void;
-  initAuth: () => Promise<void>;
-  logout: () => void;
+interface User {
+  _id: string;
+  name: string;
+  email: string;
+  role: "candidate" | "employer";
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+interface AuthState {
+  user: User | null;
+  token: string | null;
+  loading: boolean;
+  login: (user: User, token: string) => void;
+  logout: () => void;
+  loadUser: () => void;
+  setLoading: (loading: boolean) => void;
+}
+
+export const useAuthStore = create<AuthState>((set) => ({
   user: null,
-  token: localStorage.getItem("token"),
-  loading: true,
+  token: null,
+  loading: true, // 🔥 MUST HAVE (Used in ProtectedRoute)
 
-  setAuth: (user, token) => {
-    localStorage.setItem("token", token);
+  setLoading: (loading) => set({ loading }),
+
+  login: (user, token) => {
     set({ user, token, loading: false });
-  },
-
-  initAuth: async () => {
-    const token = get().token;
-    if (!token) return set({ loading: false });
-
-    try {
-      const res = await authService.me();
-      set({ user: res.user, loading: false });
-    } catch (err) {
-      localStorage.removeItem("token");
-      set({ user: null, token: null, loading: false });
-    }
+    localStorage.setItem("user", JSON.stringify(user));
+    localStorage.setItem("token", token);
   },
 
   logout: () => {
+    localStorage.removeItem("user");
     localStorage.removeItem("token");
     set({ user: null, token: null, loading: false });
-  }
+  },
+
+  loadUser: () => {
+    const user = localStorage.getItem("user");
+    const token = localStorage.getItem("token");
+
+    if (user && token) {
+      set({
+        user: JSON.parse(user),
+        token,
+        loading: false, // 🔥 Set loading false after loading
+      });
+    } else {
+      set({ loading: false });
+    }
+  },
 }));

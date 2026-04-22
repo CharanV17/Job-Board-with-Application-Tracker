@@ -1,31 +1,74 @@
-import { api } from "./api";
+import axios from "axios";
+
+const BASE_URL = "http://localhost:4000/api/jobs";
 
 export const jobService = {
-  // 🔍 Public — list jobs with filters & pagination
-  getJobs: async (params: any) =>
-    api.get("/jobs", { params }).then((r) => r.data),
+  async getJobs(params: any = {}) {
+    try {
+      const res = await axios.get(BASE_URL, { params });
+      return res.data;
+    } catch (err) {
+      console.error("Job fetch failed:", err);
+      return { jobs: [], page: 1, pages: 1, total: 0 };
+    }
+  },
 
-  // 🔍 Public — get job details
-  getJobById: async (id: string) =>
-    api.get(`/jobs/${id}`).then((r) => r.data),
+  async getJobById(id: string) {
+    const res = await axios.get(`${BASE_URL}/${id}`);
+    return res.data.job || res.data;
+  },
 
-  // 🧑‍💼 Employer — fetch jobs created by the logged-in employer
-  getEmployerJobs: async () =>
-    api.get("/employer/jobs").then((r) => r.data),
+  async createJob(data: any, token: string) {
+    const res = await axios.post(BASE_URL, data, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  },
 
-  // 🧑‍💼 Employer — create job
-  createJob: async (data: any) =>
-    api.post("/jobs", data).then((r) => r.data),
+  async updateJob(id: string, data: any, token: string) {
+    const res = await axios.put(`${BASE_URL}/${id}`, data, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  },
 
-  // 🧑‍💼 Employer — update job
-  updateJob: async (id: string, data: any) =>
-    api.put(`/jobs/${id}`, data).then((r) => r.data),
+  async getEmployerJobs(token: string) {
+    const res = await axios.get(`${BASE_URL}/employer/my-jobs`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  },
 
-  // 🧑‍💼 Employer — delete job
-  deleteJob: async (id: string) =>
-    api.delete(`/jobs/${id}`).then((r) => r.data),
+  async deleteJob(id: string, token: string) {
+    const res = await axios.delete(`${BASE_URL}/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  },async getJobApplications(jobId: string, token: string) {
+  const res = await axios.get(`http://localhost:4000/api/applications/job/${jobId}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return res.data;
+},
 
-  // 🧑‍💼 Employer — view applications for a specific job
-  getJobApplications: async (jobId: string) =>
-    api.get(`/employer/jobs/${jobId}/applications`).then((r) => r.data),
+async updateApplicationStatus(id: string, status: string, token: string) {
+  const res = await axios.put(
+    `http://localhost:4000/api/applications/${id}/status`,
+    { status },
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return res.data;
+},
+
+async apply(jobId: string, token: string) {
+  const res = await axios.post(
+    "http://localhost:4000/api/applications",
+    { jobId },
+    {
+      headers: { Authorization: `Bearer ${token}` }
+    }
+  );
+  return res.data;
+}
+
 };

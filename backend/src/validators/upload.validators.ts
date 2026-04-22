@@ -1,8 +1,17 @@
-import { z } from "zod";
+import { Router } from "express";
+import { authMiddleware } from "../middleware/auth";
+import { requireRole } from "../middleware/role";
 
-export const presignSchema = z.object({
-  query: z.object({
-    filename: z.string().min(1),
-    contentType: z.literal("application/pdf")
-  })
-});
+const router = Router();
+
+// Only employers upload job-related files
+router.post(
+  "/",
+  authMiddleware,
+  requireRole("employer"),
+  (req, res) => {
+    res.json({ message: "Upload OK" });
+  }
+);
+
+export default router;

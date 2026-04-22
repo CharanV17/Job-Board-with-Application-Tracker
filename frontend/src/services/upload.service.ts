@@ -5,7 +5,7 @@ export const uploadService = {
     const res = await api.get("/uploads/presign", {
       params: { filename, contentType }
     });
-    return res.data;
+    return res.data; // returns { uploadUrl, fileUrl }
   },
 
   uploadToS3: async (uploadUrl: string, file: File) => {
@@ -14,11 +14,14 @@ export const uploadService = {
       headers: {
         "Content-Type": file.type
       },
-      body: file
+      body: file,
     });
 
-    if (!res.ok) throw new Error("Failed to upload file to S3");
+    if (!res.ok) {
+      console.error("S3 Upload Error:", await res.text());
+      throw new Error("Failed to upload file to S3");
+    }
+
     return true;
   }
 };
-
